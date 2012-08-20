@@ -64,6 +64,11 @@ void loop(const std::string&);
 
 } // namespace UCI
 
+namespace DGT
+{
+	void loop(const std::string&);
+}
+
 extern UCI::OptionsMap Options;
 
 #endif // !defined(UCIOPTION_H_INCLUDED)

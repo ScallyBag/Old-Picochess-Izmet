@@ -34,6 +34,11 @@
 
 using namespace std;
 
+namespace DGT
+{
+
+Search::LimitsType limits, resetLimits;
+
 //--------------------------------------------------------------------
 // Give the current board setup as FEN string
 // char  :  tomove = 'w' or 'b' : the side to move
@@ -90,7 +95,47 @@ string getDgtFEN(char tomove = 'w')
 	//printf("FEN %s\n", FEN);
 }
 
-void DGT::loop(const string& args) {
+//change parameters with special position on the board
+void configure(const string& fen)
+{
+	if(fen=="8/8/8/8/8/8/8/PP6 w KQkq - 0 1")  { dgtnixPrintMessageOnClock("config", 1); }
+
+	//set skill level
+	if(fen=="p7/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 00", 1); Options[string("Skill Level")] = string("0"); }
+	if(fen=="1p6/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 01", 1); Options[string("Skill Level")] = string("1"); }
+	if(fen=="2p5/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 02", 1); Options[string("Skill Level")] = string("2"); }
+	if(fen=="3p4/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 03", 1); Options[string("Skill Level")] = string("3"); }
+	if(fen=="4p3/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 04", 1); Options[string("Skill Level")] = string("4"); }
+	if(fen=="5p2/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 05", 1); Options[string("Skill Level")] = string("5"); }
+	if(fen=="6p1/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 06", 1); Options[string("Skill Level")] = string("6"); }
+	if(fen=="7p/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 07", 1); Options[string("Skill Level")] = string("7"); }
+	if(fen=="8/p7/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 08", 1); Options[string("Skill Level")] = string("8"); }
+	if(fen=="8/1p6/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 09", 1); Options[string("Skill Level")] = string("9"); }
+	if(fen=="8/2p5/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 10", 1); Options[string("Skill Level")] = string("10"); }
+	if(fen=="8/3p4/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 11", 1); Options[string("Skill Level")] = string("11"); }
+	if(fen=="8/4p3/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 12", 1); Options[string("Skill Level")] = string("12"); }
+	if(fen=="8/5p2/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 13", 1); Options[string("Skill Level")] = string("13"); }
+	if(fen=="8/6p1/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 14", 1); Options[string("Skill Level")] = string("14"); }
+	if(fen=="8/7p/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 15", 1); Options[string("Skill Level")] = string("15"); }
+	if(fen=="8/8/p7/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 16", 1); Options[string("Skill Level")] = string("16"); }
+	if(fen=="8/8/1p6/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 17", 1); Options[string("Skill Level")] = string("17"); }
+	if(fen=="8/8/2p5/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 18", 1); Options[string("Skill Level")] = string("18"); }
+	if(fen=="8/8/3p4/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 19", 1); Options[string("Skill Level")] = string("19"); }
+	if(fen=="8/8/4p3/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 20", 1); Options[string("Skill Level")] = string("20"); }
+
+	//set time control
+	if(fen=="n7/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  1", 1); limits=resetLimits; limits.movetime=1000; }
+	if(fen=="1n6/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  5", 1); limits=resetLimits; limits.movetime=5000; }
+	if(fen=="2n5/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 10", 1); limits=resetLimits; limits.movetime=10000; }
+	if(fen=="3n4/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 20", 1); limits=resetLimits; limits.movetime=20000; }
+	if(fen=="4n3/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 40", 1); limits=resetLimits; limits.movetime=40000; }
+	if(fen=="5n2/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 1m", 1); limits=resetLimits; limits.movetime=60000; }
+	if(fen=="6n1/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 3m", 1); limits=resetLimits; limits.movetime=180000; }
+	if(fen=="7n/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 5m", 1); limits=resetLimits; limits.movetime=300000; }
+
+}
+
+void loop(const string& args) {
 	// FEN string of the initial position, normal chess
 	  const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -156,7 +201,7 @@ void DGT::loop(const string& args) {
 
 	    bool searching=false;
 
-	    Search::LimitsType limits, resetLimits;
+
 	    limits.movetime=5000;
 	    string currentFEN=getDgtFEN();
 	    //pos.from_fen(currentFEN,false, Threads.main_thread());
@@ -179,40 +224,7 @@ void DGT::loop(const string& args) {
 
 	            if(currentFEN.find("/PP6 w")!=string::npos) //config mode
 	            {
-	                if(currentFEN=="8/8/8/8/8/8/8/PP6 w KQkq - 0 1")  { dgtnixPrintMessageOnClock("config", 1); }
-
-	                //set skill level
-	                if(currentFEN=="p7/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 00", 1); Options[string("Skill Level")] = string("0"); }
-	                if(currentFEN=="1p6/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 01", 1); Options[string("Skill Level")] = string("1"); }
-	                if(currentFEN=="2p5/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 02", 1); Options[string("Skill Level")] = string("2"); }
-	                if(currentFEN=="3p4/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 03", 1); Options[string("Skill Level")] = string("3"); }
-	                if(currentFEN=="4p3/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 04", 1); Options[string("Skill Level")] = string("4"); }
-	                if(currentFEN=="5p2/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 05", 1); Options[string("Skill Level")] = string("5"); }
-	                if(currentFEN=="6p1/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 06", 1); Options[string("Skill Level")] = string("6"); }
-	                if(currentFEN=="7p/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 07", 1); Options[string("Skill Level")] = string("7"); }
-	                if(currentFEN=="8/p7/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 08", 1); Options[string("Skill Level")] = string("8"); }
-	                if(currentFEN=="8/1p6/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 09", 1); Options[string("Skill Level")] = string("9"); }
-	                if(currentFEN=="8/2p5/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 10", 1); Options[string("Skill Level")] = string("10"); }
-	                if(currentFEN=="8/3p4/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 11", 1); Options[string("Skill Level")] = string("11"); }
-	                if(currentFEN=="8/4p3/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 12", 1); Options[string("Skill Level")] = string("12"); }
-	                if(currentFEN=="8/5p2/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 13", 1); Options[string("Skill Level")] = string("13"); }
-	                if(currentFEN=="8/6p1/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 14", 1); Options[string("Skill Level")] = string("14"); }
-	                if(currentFEN=="8/7p/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 15", 1); Options[string("Skill Level")] = string("15"); }
-	                if(currentFEN=="8/8/p7/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 16", 1); Options[string("Skill Level")] = string("16"); }
-	                if(currentFEN=="8/8/1p6/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 17", 1); Options[string("Skill Level")] = string("17"); }
-	                if(currentFEN=="8/8/2p5/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 18", 1); Options[string("Skill Level")] = string("18"); }
-	                if(currentFEN=="8/8/3p4/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 19", 1); Options[string("Skill Level")] = string("19"); }
-	                if(currentFEN=="8/8/4p3/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 20", 1); Options[string("Skill Level")] = string("20"); }
-
-	                //set time control
-	                if(currentFEN=="n7/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  1", 1); limits=resetLimits; limits.movetime=1000; }
-	                if(currentFEN=="1n6/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  5", 1); limits=resetLimits; limits.movetime=5000; }
-	                if(currentFEN=="2n5/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 10", 1); limits=resetLimits; limits.movetime=10000; }
-	                if(currentFEN=="3n4/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 20", 1); limits=resetLimits; limits.movetime=20000; }
-	                if(currentFEN=="4n3/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 40", 1); limits=resetLimits; limits.movetime=40000; }
-	                if(currentFEN=="5n2/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 1m", 1); limits=resetLimits; limits.movetime=60000; }
-	                if(currentFEN=="6n1/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 3m", 1); limits=resetLimits; limits.movetime=180000; }
-	                if(currentFEN=="7n/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 5m", 1); limits=resetLimits; limits.movetime=300000; }
+	            	configure(currentFEN);
 	            }
 
 	            //launch the search
@@ -279,4 +291,6 @@ void DGT::loop(const string& args) {
 	    }
 
 	    dgtnixClose();
+}
+
 }

@@ -40,7 +40,19 @@ PGOBENCH = ./$(EXE) bench 32 1 10 default depth
 ### Object files
 OBJS = benchmark.o bitbase.o bitboard.o book.o endgame.o evaluate.o main.o \
 	material.o misc.o movegen.o movepick.o notation.o pawns.o position.o \
-	search.o thread.o timeman.o tt.o uci.o ucioption.o
+	search.o thread.o timeman.o tt.o uci.o ucioption.o \
+	tbprobe/gtb-probe.o tbprobe/gtb-dec.o tbprobe/gtb-att.o tbprobe/sysport/sysport.o \
+	tbprobe/compression/wrap.o tbprobe/compression/huffman/hzip.o \
+	tbprobe/compression/liblzf/lzf_c.o tbprobe/compression/liblzf/lzf_d.o \
+	tbprobe/compression/zlib/zcompress.o tbprobe/compression/zlib/uncompr.o \
+	tbprobe/compression/zlib/inflate.o tbprobe/compression/zlib/deflate.o \
+	tbprobe/compression/zlib/adler32.o tbprobe/compression/zlib/crc32.o \
+	tbprobe/compression/zlib/infback.o tbprobe/compression/zlib/inffast.o \
+	tbprobe/compression/zlib/inftrees.o tbprobe/compression/zlib/trees.o \
+	tbprobe/compression/zlib/zutil.o tbprobe/compression/lzma/LzmaEnc.o \
+	tbprobe/compression/lzma/LzmaDec.o tbprobe/compression/lzma/Alloc.o \
+	tbprobe/compression/lzma/LzFind.o tbprobe/compression/lzma/Lzma86Enc.o \
+	tbprobe/compression/lzma/Lzma86Dec.o tbprobe/compression/lzma/Bra86.o
 
 ### ==========================================================================
 ### Section 2. High-level Configuration
@@ -210,6 +222,11 @@ endif
 
 ### 3.2 General compiler settings
 CXXFLAGS = -g -Wall -Wcast-qual -fno-exceptions -fno-rtti $(EXTRACXXFLAGS)
+
+#Gaviota tablebases specific settings
+CFLAGS += -I tbprobe/ -I tbprobe/sysport/ -I tbprobe/compression/ -I tbprobe/compression/huffman/
+CFLAGS += -I tbprobe/compression/liblzf/ -I tbprobe/compression/zlib/ -I tbprobe/compression/lzma/
+CFLAGS += -D NDEBUG -D Z_PREFIX
 
 ifeq ($(comp),gcc)
 	CXXFLAGS += -ansi -pedantic -Wno-long-long -Wextra -Wshadow

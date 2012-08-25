@@ -21,6 +21,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
+#include <stack>
 
 #include "evaluate.h"
 #include "notation.h"
@@ -38,6 +40,9 @@ namespace DGT
 {
 
 Search::LimitsType limits, resetLimits;
+enum Side { WHITE, BLACK, ANALYSIS } computerPlays;
+vector<Move> game;
+const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 
 //--------------------------------------------------------------------
 // Give the current board setup as FEN string
@@ -91,8 +96,7 @@ string getDgtFEN(char tomove = 'w')
 	// Mark the end of the string
 	FEN[pos] = char(0);
 
-        return string(FEN);
-	//printf("FEN %s\n", FEN);
+    return string(FEN);
 }
 
 //change parameters with special position on the board
@@ -135,173 +139,166 @@ void configure(const string& fen)
 
 	//board orientation
 	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") { cout << "right" << endl; dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT); }
+
+	//set side to play (simply remove the king of the side you are playing and put it back on the board)
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w KQkq - 0 1") { cout << "You play white"<< endl; computerPlays=BLACK; }
+	if(fen=="rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { cout << "You play black"<< endl; computerPlays=WHITE; }
+
+	//new game
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+	{
+		//stop the current search
+		Search::Signals.stop = true;
+		Threads.wait_for_search_finished();
+		//reset the game
+		game.clear();
+		TT.clear();
+	}
+}
+
+//Test if the fen is playable in the current game.
+//If true, return the move leading to this fen, else return MOVE_NONE
+Move isPlayable(const string& _fen)
+{
+	Position pos(StartFEN, false, Threads.main_thread()); // The root position
+	stack<StateInfo> states;
+	string fen=_fen.substr(0, _fen.find(' '));
+
+	//First, we do all the game moves
+	for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it) {
+		states.push(StateInfo());
+	    pos.do_move(*it, states.top());
+	}
+
+	//Check is the fen is playable in current game position
+	for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml) {
+					StateInfo state;
+					pos.do_move(ml.move(), state);
+					string positionFEN = pos.to_fen();
+					positionFEN = positionFEN.substr(0, positionFEN.find(' '));
+					//cout << "Compare " << positionFEN << " with "<<fen <<  endl;
+					if(!positionFEN.compare(fen)) return ml.move();
+					pos.undo_move(ml.move());
+	}
+
+	/*
+	//Next we check from the end of the game to the beginning if we reached a playable position
+	vector<Move>::reverse_iterator rit;
+	  for ( rit=game.rbegin() ; rit < game.rend(); ++rit )
+	  {
+		  pos.undo_move(*rit);
+	      cout << pos.to_fen() << endl;
+	  }*/
+
+	return MOVE_NONE;
 }
 
 void loop(const string& args) {
-	// FEN string of the initial position, normal chess
-	  const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	/*
+	 * Initialisation
+	 */
+	Position pos(StartFEN, false, Threads.main_thread()); // The root position
+	computerPlays=BLACK;
+	bool searching = false;
+	limits.movetime = 5000; //search defaults to 5 seconds per move
+	Move playerMove=MOVE_NONE;
+	StateInfo state;
 
-	/*if(argc!=2)
-	      {
-	        cout << "usage: ./stockfish dgt port" << endl;
-	        cout << "Port is the port to which the board is connected." << endl;
-	        cout << "For usb connection, try : /dev/usb/tts/0, /dev/usb/tts/1, /dev/usb/tts/2 ..." << endl;
-	        cout << "For serial, try : /dev/ttyS0, /dev/ttyS1, /dev/ttyS2 ..." << endl;
-	        //cout << "For the virtual board /tmp/dgtnixBoard is the default but you can change it." << endl;
-	        exit(1);
-	      }*/
+	/*
+	 * DGT Board Initialisation
+	 */
+	int BoardDescriptor;
+	char port[256];
+	/* all debug informations are printed */
+	dgtnixSetOption(DGTNIX_DEBUG, DGTNIX_DEBUG_WITH_TIME);
+	/* Initialize the driver with port argv[2] */
+	strncpy(port, args.c_str(), 256);
+	BoardDescriptor = dgtnixInit(port);
+	int err = dgtnix_errno;
+	if (BoardDescriptor < 0) {
+		cout << "Unable to connect to DGT board on port " << port << " : ";
+		switch (BoardDescriptor) {
+		case -1:
+			cout << strerror(err) << endl;
+			break;
+		case -2:
+			cout << "Not responding to the DGT_SEND_BRD message" << endl;
+			break;
+		default:
+			cout << "Unrecognized response to the DGT_SEND_BRD message :"
+					<< BoardDescriptor << endl;
+		}
+		exit(-1);
+	}
+	cout << "The board was found" << BoardDescriptor << endl;
+	dgtnixPrintMessageOnClock(" hello", 1);
+	dgtnixUpdate();
 
-	    Position pos(StartFEN, false, Threads.main_thread()); // The root position
+	//Get the first board state
+	string currentFEN = getDgtFEN();
+	configure(currentFEN); //useful for orientation
 
-	    //compute the next legal fens
-	    StateInfo state;
+	/*
+	 * Main DGT event loop
+	 */
+	while (true) {
+		string s = getDgtFEN();
+		if (currentFEN != s) { //There is some change on the DGT board
+			currentFEN = s;
 
-	    std::map<string,Move> legalFENs;
-	    for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)
-	    {
-	        //StateInfo state;
-	        pos.do_move(ml.move(),state);
-	        //cout<<pos.to_fen()<<endl;
-	        string str=pos.to_fen();
-	        str=str.substr(0, str.find(' '));
-	        legalFENs.insert(pair<string,Move>(str,ml.move()));
-	        cout << str << endl;
-	        pos.undo_move(ml.move());
-	    }
+			cout << currentFEN << endl;
+			configure(currentFEN); //on board configuration
 
+			//Test if we reach a playable position in the current game
+			Move move=isPlayable(currentFEN);
+			cout<< "-------------------------Move:" << move <<  endl;
+			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
+			{
+				//stop the current search
+				Search::Signals.stop = true;
+				Threads.wait_for_search_finished();
 
-	    int BoardDescriptor;
-	    //int optionError=0;
-	    char port[256];
-	    /* all debug informations are printed */
-	    dgtnixSetOption(DGTNIX_DEBUG, DGTNIX_DEBUG_WITH_TIME);
-	    /* Initialize the driver with port argv[2] */
-	    strncpy(port, args.c_str(), 256);
-	    BoardDescriptor=dgtnixInit(port);
-	    int err = dgtnix_errno;
-	    if(BoardDescriptor < 0 )
-	      {
-	        cout << "Unable to connect to DGT board on port "  << port <<" : " ;
-	        switch (BoardDescriptor)
-	          {
-	          case -1:
-	            cout << strerror(err) << endl;
-	            break;
-	          case -2:
-	            cout << "Not responding to the DGT_SEND_BRD message" << endl;
-	            break;
-	          default:
-	            cout << "Unrecognized response to the DGT_SEND_BRD message :" <<  BoardDescriptor <<endl;
-	          }
-	        exit(-1);
-	      }
-	    cout << "The board was found" << BoardDescriptor << endl;
+				playerMove=move;
+				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
 
+				//Do all the game moves
+				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
+					pos.do_move(*it, state);
+				if(move!=MOVE_NONE) pos.do_move(playerMove,state); //Do the board move
 
-	    dgtnixPrintMessageOnClock(" hello", 1);
-	    dgtnixUpdate();
+				//Launch the search
+				dgtnixPrintMessageOnClock("search", 0);
+				Threads.start_searching(pos, limits, vector<Move>());
+				searching = true;
+			}
+		}
 
-	    bool searching=false;
+		//Check for finished search
+		if (Search::Signals.stop == true && searching) {
+			searching = false;
+			cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
 
+			//print the move on the clock
+			string dgtMove = move_to_uci(Search::RootMoves[0].pv[0], false);
+			dgtMove.insert(2, 1, ' ');
+			if (dgtMove.length() < 6)
+				dgtMove.append(" ");
+			cout << '[' << dgtMove << ']' << endl;
+			dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
 
-	    limits.movetime=5000;
-	    string currentFEN=getDgtFEN();
-	    configure(currentFEN); //useful for orientation
-	    //pos.from_fen(currentFEN,false, Threads.main_thread());
+			//do the moves in the game
+			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+			game.push_back(Search::RootMoves[0].pv[0]);
+		}
 
-	    //"8/8/8/8/8/8/8/PP6 w KQkq - 0 1"
-	    while(true)
-	    {
-	        //cout << "DGT Loop" << endl;
-	        //dgtnixPrintMessageOnClock("abcdeg", 1);
+		//sleep
+		struct timespec tim, tim2;
+		tim.tv_sec = 0;
+		tim.tv_nsec = 30000000L;
+		nanosleep(&tim, &tim2);
+	}
 
-	        string s=getDgtFEN();
-	        if(currentFEN!=s)
-	        {
-	            currentFEN=s;
-	            //pos.from_fen(currentFEN,false, Threads.main_thread());
-
-	            cout << currentFEN << endl;
-
-	            //if(currentFEN=="8/8/8/8/8/8/8/PP6 w KQkq - 0 1")  { dgtnixPrintMessageOnClock("config", 1); }
-
-	            //if(currentFEN.find("/PP6 w")!=string::npos) //config mode
-	            //{
-	            	configure(currentFEN);
-	            //}
-
-	            //launch the search
-	            string str=currentFEN.substr(0, currentFEN.find(' '));
-	            if(legalFENs.count(str))
-	            {
-
-	                Position p(pos);
-	                p.do_move(legalFENs.at(str),state);
-
-
-	                Search::Signals.stop = true;
-	                Threads.wait_for_search_finished(); // Cannot quit while threads are running
-
-	                dgtnixPrintMessageOnClock("search", 0);
-
-	                vector<Move> searchMoves;
-	                Threads.start_searching(p, limits, searchMoves);
-	                searching=true;
-	            }
-
-
-
-	            /*
-	            Search::Signals.stop = true;
-	            Threads.wait_for_search_finished(); // Cannot quit while threads are running
-
-	            Search::LimitsType limits;
-	            limits.movetime=3000;
-	            vector<Move> searchMoves;
-
-	            Threads.start_searching(pos, limits, searchMoves);*/
-
-	        }
-
-	        //check for pos update after search
-	        if(Search::Signals.stop == true && searching)
-	        {
-	            searching=false;
-	            cout << "stopped with move " <<  move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
-
-	            //print the move on the clock
-	            string dgtMove=move_to_uci(Search::RootMoves[0].pv[0], false);
-	            dgtMove.insert(2, 1, ' ');
-	            if(dgtMove.length()<6) dgtMove.append(" ");
-	            cout << '[' <<  dgtMove << ']' << endl;
-	            dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
-
-
-	            string str=currentFEN.substr(0, currentFEN.find(' ')); //do the player move
-	            pos.do_move(legalFENs.at(str),state);
-	            pos.do_move(Search::RootMoves[0].pv[0],state); //do the engine's move
-	            legalFENs.clear();
-	            for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)
-	            {
-	                //StateInfo state;
-	                pos.do_move(ml.move(),state);
-	                cout<<pos.to_fen()<<endl;
-	                string str=pos.to_fen();
-	                str=str.substr(0, str.find(' '));
-	                legalFENs.insert(pair<string,Move>(str,ml.move()));
-	                cout << str << endl;
-	                pos.undo_move(ml.move());
-	            }
-	        }
-
-	        //sleep
-	        struct timespec tim, tim2;
-	        tim.tv_sec = 0;
-	        tim.tv_nsec = 30000000L;
-	        nanosleep(&tim , &tim2);
-	    }
-
-	    dgtnixClose();
+	dgtnixClose();
 }
 
 }

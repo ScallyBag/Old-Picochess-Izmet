@@ -133,6 +133,8 @@ void configure(const string& fen)
 	if(fen=="6n1/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 3m", 1); limits=resetLimits; limits.movetime=180000; }
 	if(fen=="7n/8/8/8/8/8/8/PP6 w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 5m", 1); limits=resetLimits; limits.movetime=300000; }
 
+	//board orientation
+	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") { cout << "right" << endl; dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT); }
 }
 
 void loop(const string& args) {
@@ -204,6 +206,7 @@ void loop(const string& args) {
 
 	    limits.movetime=5000;
 	    string currentFEN=getDgtFEN();
+	    configure(currentFEN); //useful for orientation
 	    //pos.from_fen(currentFEN,false, Threads.main_thread());
 
 	    //"8/8/8/8/8/8/8/PP6 w KQkq - 0 1"
@@ -222,10 +225,10 @@ void loop(const string& args) {
 
 	            //if(currentFEN=="8/8/8/8/8/8/8/PP6 w KQkq - 0 1")  { dgtnixPrintMessageOnClock("config", 1); }
 
-	            if(currentFEN.find("/PP6 w")!=string::npos) //config mode
-	            {
+	            //if(currentFEN.find("/PP6 w")!=string::npos) //config mode
+	            //{
 	            	configure(currentFEN);
-	            }
+	            //}
 
 	            //launch the search
 	            string str=currentFEN.substr(0, currentFEN.find(' '));
@@ -265,6 +268,14 @@ void loop(const string& args) {
 	        {
 	            searching=false;
 	            cout << "stopped with move " <<  move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
+
+	            //print the move on the clock
+	            string dgtMove=move_to_uci(Search::RootMoves[0].pv[0], false);
+	            dgtMove.insert(2, 1, ' ');
+	            if(dgtMove.length()<6) dgtMove.append(" ");
+	            cout << '[' <<  dgtMove << ']' << endl;
+	            dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
+
 
 	            string str=currentFEN.substr(0, currentFEN.find(' ')); //do the player move
 	            pos.do_move(legalFENs.at(str),state);

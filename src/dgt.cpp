@@ -44,12 +44,9 @@ enum Side { WHITE, BLACK, ANALYSIS } computerPlays;
 vector<Move> game;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 
-//--------------------------------------------------------------------
-// Give the current board setup as FEN string
-// char  :  tomove = 'w' or 'b' : the side to move
-//
-// char     : tomove         : the side to move (white is default)
-//--------------------------------------------------------------------
+
+/// Give the current board setup as FEN string
+/// char  :  tomove = 'w' or 'b' : the side to move (white is default)
 string getDgtFEN(char tomove = 'w')
 {
 	const char *board = dgtnixGetBoard();
@@ -99,7 +96,7 @@ string getDgtFEN(char tomove = 'w')
     return string(FEN);
 }
 
-//change parameters with special position on the board
+/// Change UCI parameters with special positions on the board
 void configure(const string& fen)
 {
 	if(fen=="8/8/8/8/8/8/8/PP6 w KQkq - 0 1")  { dgtnixPrintMessageOnClock("config", 1); }
@@ -156,8 +153,8 @@ void configure(const string& fen)
 	}
 }
 
-//Test if the fen is playable in the current game.
-//If true, return the move leading to this fen, else return MOVE_NONE
+/// Test if the given fen is playable in the current game.
+/// If true, return the move leading to this fen, else return MOVE_NONE
 Move isPlayable(const string& _fen)
 {
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
@@ -194,9 +191,7 @@ Move isPlayable(const string& _fen)
 }
 
 void loop(const string& args) {
-	/*
-	 * Initialisation
-	 */
+	// Initialization
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
 	bool searching = false;
@@ -204,14 +199,10 @@ void loop(const string& args) {
 	Move playerMove=MOVE_NONE;
 	StateInfo state;
 
-	/*
-	 * DGT Board Initialisation
-	 */
+	// DGT Board Initialization
 	int BoardDescriptor;
 	char port[256];
-	/* all debug informations are printed */
-	dgtnixSetOption(DGTNIX_DEBUG, DGTNIX_DEBUG_WITH_TIME);
-	/* Initialize the driver with port argv[2] */
+	dgtnixSetOption(DGTNIX_DEBUG, DGTNIX_DEBUG_WITH_TIME); //all debug informations are printed
 	strncpy(port, args.c_str(), 256);
 	BoardDescriptor = dgtnixInit(port);
 	int err = dgtnix_errno;
@@ -234,13 +225,11 @@ void loop(const string& args) {
 	dgtnixPrintMessageOnClock(" hello", 1);
 	dgtnixUpdate();
 
-	//Get the first board state
+	// Get the first board state
 	string currentFEN = getDgtFEN();
 	configure(currentFEN); //useful for orientation
 
-	/*
-	 * Main DGT event loop
-	 */
+	// Main DGT event loop
 	while (true) {
 		string s = getDgtFEN();
 		if (currentFEN != s) { //There is some change on the DGT board

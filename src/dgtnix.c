@@ -249,11 +249,11 @@ static int _debug(const char *format, ...)
 {
   if( (g_debugMode == DGTNIX_DEBUG_ON) || (g_debugMode == DGTNIX_DEBUG_WITH_TIME))
     {
-      fprintf(stderr, g_debugString);
+      fprintf(stderr, "%s", g_debugString);
       if(dgtnix_errno!=0)
 	{
 	  fprintf(stderr, "dgtnix_errno:");
-	  fprintf(stderr,strerror(dgtnix_errno));
+	  fprintf(stderr, "%s", strerror(dgtnix_errno));
 	  fprintf(stderr, ":");
 	}
       va_list ap;
@@ -575,11 +575,11 @@ static void _dumpBoard(const char *board)
 	  if(!(square==0))
 	    {
 	      fprintf(stderr,"|\n");
-	      fprintf(stderr,g_debugString);
+	      fprintf(stderr, "%s", g_debugString);
 	    }
 	  else
 	    {
-	      fprintf(stderr,g_debugString);
+	      fprintf(stderr, "%s", g_debugString);
 	    }
 	}
       fprintf(stderr,"|%c", _convertInternalPieceToExternal(board[square]));

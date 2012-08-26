@@ -171,10 +171,8 @@ Move isPlayable(const string& _fen)
 	for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml) {
 					StateInfo state;
 					pos.do_move(ml.move(), state);
-					string positionFEN = pos.to_fen();
-					positionFEN = positionFEN.substr(0, positionFEN.find(' '));
-					//cout << "Compare " << positionFEN << " with "<<fen <<  endl;
-					if(!positionFEN.compare(fen)) return ml.move();
+					if (pos.to_fen().find(fen) != string::npos)
+					        return ml.move();
 					pos.undo_move(ml.move());
 	}
 

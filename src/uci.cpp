@@ -39,9 +39,8 @@ namespace {
   const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
   // Keep track of position keys along the setup moves (from start position to the
-  // position just before to start searching). This is needed by draw detection
-  // where, due to 50 moves rule, we need to check at most 100 plies back.
-  StateInfo StateRingBuf[102], *SetupState = StateRingBuf;
+  // position just before to start searching). Needed by repetition draw detection.
+  Search::StateStackPtr SetupStates;
 
   void set_option(istringstream& up);
   void set_position(Position& pos, istringstream& up);
@@ -157,10 +156,10 @@ void UCI::loop(const string& args) {
 
 namespace {
 
-  // set_position() is called when engine receives the "position" UCI
-  // command. The function sets up the position described in the given
-  // fen string ("fen") or the starting position ("startpos") and then
-  // makes the moves given in the following move list ("moves").
+  // set_position() is called when engine receives the "position" UCI command.
+  // The function sets up the position described in the given fen string ("fen")
+  // or the starting position ("startpos") and then makes the moves given in the
+  // following move list ("moves").
 
   void set_position(Position& pos, istringstream& is) {
 
@@ -181,15 +180,13 @@ namespace {
         return;
 
     pos.from_fen(fen, Options["UCI_Chess960"], Threads.main_thread());
+    SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
 
     // Parse move list (if any)
     while (is >> token && (m = move_from_uci(pos, token)) != MOVE_NONE)
     {
-        pos.do_move(m, *SetupState);
-
-        // Increment pointer to StateRingBuf circular buffer
-        if (++SetupState - StateRingBuf >= 102)
-            SetupState = StateRingBuf;
+        SetupStates->push(StateInfo());
+        pos.do_move(m, SetupStates->top());
     }
   }
 
@@ -255,6 +252,6 @@ namespace {
                 searchMoves.push_back(move_from_uci(pos, token));
     }
 
-    Threads.start_searching(pos, limits, searchMoves);
+    Threads.start_searching(pos, limits, searchMoves, SetupStates);
   }
 }

@@ -195,7 +195,7 @@ void loop(const string& args) {
 	bool searching = false;
 	limits.movetime = 5000; //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
-	StateInfo state;
+	//StateInfo state;
 
 	// DGT Board Initialization
 	int BoardDescriptor;
@@ -248,14 +248,25 @@ void loop(const string& args) {
 				playerMove=move;
 				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
 
+				// Keep track of position keys along the setup moves (from start position to the
+				// position just before to start searching). Needed by repetition draw detection.
+				Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
+
 				//Do all the game moves
 				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
-					pos.do_move(*it, state);
-				if(move!=MOVE_NONE) pos.do_move(playerMove,state); //Do the board move
+				{
+					SetupStates->push(StateInfo());
+					pos.do_move(*it, SetupStates->top());
+				}
+				if(move!=MOVE_NONE)
+				{
+					SetupStates->push(StateInfo());
+					pos.do_move(playerMove,SetupStates->top()); //Do the board move
+				}
 
 				//Launch the search
 				dgtnixPrintMessageOnClock("search", 0);
-				Threads.start_searching(pos, limits, vector<Move>());
+				Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
 				searching = true;
 			}
 		}

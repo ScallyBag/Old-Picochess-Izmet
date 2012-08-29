@@ -99,8 +99,6 @@ string getDgtFEN(char tomove = 'w')
 /// Change UCI parameters with special positions on the board
 void configure(const string& fen)
 {
-	//if(fen=="8/8/8/8/8/8/8/PP6 w KQkq - 0 1")  { dgtnixPrintMessageOnClock("config", 1); }
-
 	//set skill level
 	if(fen=="rnbqkbnr/pppppppp/q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 00", 1); Options[string("Skill Level")] = string("0"); }
 	if(fen=="rnbqkbnr/pppppppp/1q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 01", 1); Options[string("Skill Level")] = string("1"); }
@@ -213,7 +211,6 @@ void loop(const string& args) {
 	bool searching = false;
 	limits.movetime = 5000; //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
-	//StateInfo state;
 
 	// DGT Board Initialization
 	int BoardDescriptor;

@@ -227,6 +227,7 @@ void loop(const string& args) {
 		exit(-1);
 	}
 	cout << "The board was found" << BoardDescriptor << endl;
+    sleep(3);
 	dgtnixPrintMessageOnClock(" hello", 1);
 	dgtnixUpdate();
 

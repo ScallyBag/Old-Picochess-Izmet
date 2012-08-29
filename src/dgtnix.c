@@ -1213,7 +1213,7 @@ int dgtnixInit(const char *port)
       _debug("pthread_create:void dgtnixInit(const char *port)\n");
       return -1;
     }
-  double timeout = 1.5;
+  double timeout = 5;
  
   while(g_boardUpdated != 1 &&  timeout > 0.)
     {

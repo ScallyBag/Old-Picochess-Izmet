@@ -151,6 +151,16 @@ void configure(const string& fen)
 		game.clear();
 		TT.clear();
 	}
+    
+    //shutdown
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1")
+    {
+        //stop the current search
+    	Search::Signals.stop = true;
+		Threads.wait_for_search_finished();
+        dgtnixPrintMessageOnClock("pwroff", 1);
+        system("shutdown -h now");
+    }
 }
 
 /// Test if the given fen is playable in the current game.

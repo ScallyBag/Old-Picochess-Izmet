@@ -187,6 +187,7 @@ Move isPlayable(const string& _fen)
     		Search::Signals.stop = true;
 			Threads.wait_for_search_finished();
 	        cout << "Rolling back to position" << pos.to_fen() << endl;
+            dgtnixPrintMessageOnClock(" undo ", 1);
             game.erase((rit+1).base(),game.end()); //delete the moves from the game
             return MOVE_NONE;
         }

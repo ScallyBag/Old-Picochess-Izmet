@@ -40,7 +40,7 @@ namespace DGT
 {
 
 Search::LimitsType limits, resetLimits;
-enum Side { WHITE, BLACK, ANALYSIS } computerPlays;
+Color computerPlays;
 vector<Move> game;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 
@@ -176,14 +176,21 @@ Move isPlayable(const string& _fen)
 					pos.undo_move(ml.move());
 	}
 
-	/*
-	//Next we check from the end of the game to the beginning if we reached a playable position
-	vector<Move>::reverse_iterator rit;
-	  for ( rit=game.rbegin() ; rit < game.rend(); ++rit )
-	  {
-		  pos.undo_move(*rit);
-	      cout << pos.to_fen() << endl;
-	  }*/
+	//Next we check from the end of the game to the beginning if we reached a position already played
+    //If this is the case, we takeback the moves and return MOVE_NONE
+	for (vector<Move>::reverse_iterator rit=game.rbegin() ; rit < game.rend(); ++rit )
+	{
+		pos.undo_move(*rit);
+        if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
+        {
+            //stop the current search
+    		Search::Signals.stop = true;
+			Threads.wait_for_search_finished();
+	        cout << "Rolling back to position" << pos.to_fen() << endl;
+            game.erase((rit+1).base(),game.end()); //delete the moves from the game
+            return MOVE_NONE;
+        }
+	}
 
 	return MOVE_NONE;
 }

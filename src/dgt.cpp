@@ -152,6 +152,12 @@ void configure(const string& fen)
     }
     if(fen=="rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
     {
+        dgtnixPrintMessageOnClock("korchn", 1);
+        Options[string("Book File")] = string("books/korchnoi.bin");
+        Options[string("OwnBook")]=UCI::Option(true);
+    }
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
+    {
         dgtnixPrintMessageOnClock("larsen", 1);
         Options[string("Book File")] = string("books/larsen.bin");
         Options[string("OwnBook")]=UCI::Option(true);

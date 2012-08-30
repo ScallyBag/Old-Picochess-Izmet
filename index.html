@@ -4,73 +4,125 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>PicoChess by jromang</title>
+
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/main.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <script src="javascripts/scale.fix.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
   </head>
   <body>
-
+    <div class="wrapper">
       <header>
         <h1>PicoChess</h1>
         <p>Stand alone chess computer based on Stcokfish and DGT board</p>
+        <p class="view"><a href="https://github.com/jromang/Stockfish">View the Project on GitHub <small>jromang/Stockfish</small></a></p>
+        <ul>
+          <li><a href="https://github.com/jromang/Stockfish/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/jromang/Stockfish/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/jromang/Stockfish">View On <strong>GitHub</strong></a></li>
+        </ul>
       </header>
-
-      <div id="banner">
-        <span id="logo"></span>
-
-        <a href="https://github.com/jromang/Stockfish" class="button fork"><strong>View On GitHub</strong></a>
-        <div class="downloads">
-          <span>Downloads:</span>
-          <ul>
-            <li><a href="https://github.com/jromang/Stockfish/zipball/master" class="button">ZIP</a></li>
-            <li><a href="https://github.com/jromang/Stockfish/tarball/master" class="button">TAR</a></li>
-          </ul>
-        </div>
-      </div><!-- end banner -->
-
-    <div class="wrapper">
-      <nav>
-        <ul></ul>
-      </nav>
       <section>
-        <h3>Welcome to GitHub Pages.</h3>
+        <p><img src="http://www.nsd.uk.com/miscellaneous/PicoChessV1.png" alt="Logo"></p>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<h3>Introduction</h3>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+<p>The goal the this project is to create a dedicated chess computer based on tiny ARM computers, the Stockfish chess engine (<a href="http://www.stockfishchess.com/">http://www.stockfishchess.com/</a>), the DGT eboard and DGT XL Clock (<a href="http://www.dgtprojects.com/">http://www.dgtprojects.com/</a>), and the dgtnix driver (<a href="http://dgtnix.sourceforge.net/">http://dgtnix.sourceforge.net/</a>).</p>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<p>Currently the Rikomagic MK 802 II is supported (<a href="http://store.cloudsto.com/rikomagic/rikomagic-mk802-ii-detail.html">http://store.cloudsto.com/rikomagic/rikomagic-mk802-ii-detail.html</a>), and I also plan to support the Raspberry Pi (<a href="http://www.raspberrypi.org/">http://www.raspberrypi.org/</a>)</p>
 
-<h3>Designer Templates</h3>
+<p><img src="http://www.geeky-gadgets.com/wp-content/uploads/2012/08/Android-MK802-II.jpg" alt="MK802 II"></p>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<h3>Status</h3>
 
-<h3>Rather Drive Stick?</h3>
+<p>You can see a video here running on a standard PC : <a href="http://www.dailymotion.com/video/xt2eul_pichess_tech">http://www.dailymotion.com/video/xt2eul_pichess_tech</a></p>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<p>And running on a MK802 II ARM key :-) : <a href="http://www.dailymotion.com/video/xt4b85_pichess2_tech">http://www.dailymotion.com/video/xt4b85_pichess2_tech</a></p>
 
-<h3>Authors and Contributors</h3>
+<p>The inital proof of concept is working on a standard Linux PC and an 802MK II ARM device. There is a nasty bug in the Raspberry Pi USB firmware causing the device to hang (<a href="http://www.raspberrypi.org/phpBB3/viewtopic.php?f=44&amp;t=8010&amp;p=158380">http://www.raspberrypi.org/phpBB3/viewtopic.php?f=44&amp;t=8010&amp;p=158380</a>). I hope this will be solved in few weeks :-)</p>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<p>Done so far :</p>
 
-<h3>Support or Contact</h3>
+<ul>
+<li>Added DGT XL clock message display to dgtnix driver</li>
+<li>Added DGT board/clock support to Stockfish</li>
+<li>Player can choose skill level</li>
+<li>Player can choose computer thinking time</li>
+<li>Allow to takeback moves</li>
+<li>Software shutdown</li>
+</ul><h3>Playing strength</h3>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<p>This will be one of the strongest dedicated chess computer on the world :-)
+My initial testing on Rasperry Pi hardware versus a 4 core Intel i7 shows we have grandmaster strength :) (<a href="http://lefounumerique.xooit.com/t1202-Stockfish-sur-Raspberry-Pi.htm">http://lefounumerique.xooit.com/t1202-Stockfish-sur-Raspberry-Pi.htm</a>)</p>
+
+<table>
+<tr>
+<th align="left">Engine</th>
+<th align="left">Score</th>
+<th align="left">St</th>
+</tr>
+<tr>
+<td align="left">1: Stockfish on Pi</td>
+<td align="left">40,0/100</td>
+<td align="left">····················</td>
+</tr>
+<tr>
+<td align="left">2: Komodo3-64-sse</td>
+<td align="left">20,0/20</td>
+<td align="left">11111111111111111111</td>
+</tr>
+<tr>
+<td align="left">3: Pharaon</td>
+<td align="left">14,0/20</td>
+<td align="left">=1=1=101=110==110111</td>
+</tr>
+<tr>
+<td align="left">4: AnMon 5.75</td>
+<td align="left">11,0/20</td>
+<td align="left">==1=1110=010==011001</td>
+</tr>
+<tr>
+<td align="left">5: SOS 5.1 for Arena</td>
+<td align="left">10,5/20</td>
+<td align="left">10001=10100111=001=1</td>
+</tr>
+<tr>
+<td align="left">6: Gaia64</td>
+<td align="left">4,5/20</td>
+<td align="left">00100100010=00000100</td>
+</tr>
+</table><p>100 games played / Tournament is finished - Level: Blitz 2/1 - Hardware: Intel(R) Core(TM) i5-2405S CPU @ 2.50GHz with 8,0 GB Memory</p>
+
+<p>On a 802MK II device, stockfish is running 5 times faster ! And there is a lot of space (1GB) for the hastables.</p>
+
+<h3>TODO</h3>
+
+<ul>
+<li>Add opening books, and allow opening book selection</li>
+<li>Save games to PGN on the SD Card</li>
+<li>Add more time controls, and display remaining time on the clock</li>
+<li>Analysis mode</li>
+</ul><h3>Help needed : SD card packaging</h3>
+
+<p>I would like to provide a Raspbian based sd card image that loads stockfish at boot time.</p>
+
+<h3>Help needed : documentation</h3>
+
+<p>If you have some english skills, I would like to provide a simple PDF sheet that explains how to use the board and the config modes.</p>
+
+<h3>Credits</h3>
+
+<p>Logo by pygmy_giant</p>
       </section>
-      <footer>
-        <p>Project maintained by <a href="https://github.com/jromang">jromang</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></small></p>
-      </footer>
     </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/jromang">jromang</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
               <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

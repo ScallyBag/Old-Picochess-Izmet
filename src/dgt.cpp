@@ -174,21 +174,15 @@ void configure(const string& fen)
 	//new game
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 	{
-		//stop the current search
-		Search::Signals.stop = true;
-		Threads.wait_for_search_finished();
-		//reset the game
-		game.clear();
+		UCI::loop("stop"); //stop the current search
+		game.clear(); //reset the game
 		TT.clear();
-		//dgtnixPrintMessageOnClock(" start", 1);
 	}
 
 	//shutdown
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1")
 	{
-		//stop the current search
-		Search::Signals.stop = true;
-		Threads.wait_for_search_finished();
+		UCI::loop("stop"); //stop the current search
 		dgtnixPrintMessageOnClock("pwroff", 1);
 		system("shutdown -h now");
 	}
@@ -224,9 +218,7 @@ Move isPlayable(const string& _fen)
 		pos.undo_move(*rit);
 		if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
 		{
-			//stop the current search
-			Search::Signals.stop = true;
-			Threads.wait_for_search_finished();
+			UCI::loop("stop"); //stop the current search
 			cout << "Rolling back to position" << pos.to_fen() << endl;
 			dgtnixPrintMessageOnClock(" undo ", 1);
 			game.erase((rit+1).base(),game.end()); //delete the moves from the game
@@ -304,9 +296,7 @@ void loop(const string& args) {
 			cout<< "-------------------------Move:" << move <<  endl;
 			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
 			{
-				//stop the current search
-				Search::Signals.stop = true;
-				Threads.wait_for_search_finished();
+				UCI::loop("stop"); //stop the current search
 
 				playerMove=move;
 				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position

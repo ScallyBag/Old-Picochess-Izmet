@@ -133,11 +133,28 @@ void configure(const string& fen)
 	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 5m", 1); limits=resetLimits; limits.movetime=300000; }
 
     //choose opening book
-    if(fen=="rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1") //disable opening book
+    {
+        dgtnixPrintMessageOnClock("nobook", 1);
+        Options[string("OwnBook")]=UCI::Option(false);
+    }
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
+    {
+        dgtnixPrintMessageOnClock("   fun", 1);
+        Options[string("Book File")] = string("../books/fun.bin");
+        Options[string("OwnBook")]=UCI::Option(true);
+    }
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
+    {
+        dgtnixPrintMessageOnClock(" anand", 1);
+        Options[string("Book File")] = string("../books/anand.bin");
+        Options[string("OwnBook")]=UCI::Option(true);
+    }
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
     {
         dgtnixPrintMessageOnClock("larsen", 1);
         Options[string("Book File")] = string("books/larsen.bin");
-        Options[string("OwnBook")]=true;
+        Options[string("OwnBook")]=UCI::Option(true);
     }
 
 	//board orientation

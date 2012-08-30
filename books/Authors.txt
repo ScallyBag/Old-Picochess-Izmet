@@ -1,1 +1,4 @@
-larsen.bin by Gabriel Leperlier
+Opening books by Gabriel Leperlier :
+fun.bin
+anand.bin
+larsen.bin

@@ -16,7 +16,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #include <iostream>
 #include <sstream>
@@ -94,7 +94,7 @@ string getDgtFEN(char tomove = 'w')
 	// Mark the end of the string
 	FEN[pos] = char(0);
 
-    return string(FEN);
+	return string(FEN);
 }
 
 /// Change UCI parameters with special positions on the board
@@ -133,36 +133,36 @@ void configure(const string& fen)
 	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 3m", 1); limits=resetLimits; limits.movetime=180000; }
 	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 5m", 1); limits=resetLimits; limits.movetime=300000; }
 
-    //choose opening book
-    if(fen=="rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1") //disable opening book
-    {
-        dgtnixPrintMessageOnClock("nobook", 1);
-        Options[string("OwnBook")]=UCI::Option(false);
-    }
-    if(fen=="rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-    {
-        dgtnixPrintMessageOnClock("   fun", 1);
-        Options[string("Book File")] = string("../books/fun.bin");
-        Options[string("OwnBook")]=UCI::Option(true);
-    }
-    if(fen=="rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-    {
-        dgtnixPrintMessageOnClock(" anand", 1);
-        Options[string("Book File")] = string("../books/anand.bin");
-        Options[string("OwnBook")]=UCI::Option(true);
-    }
-    if(fen=="rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-    {
-        dgtnixPrintMessageOnClock("korchn", 1);
-        Options[string("Book File")] = string("books/korchnoi.bin");
-        Options[string("OwnBook")]=UCI::Option(true);
-    }
-    if(fen=="rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-    {
-        dgtnixPrintMessageOnClock("larsen", 1);
-        Options[string("Book File")] = string("books/larsen.bin");
-        Options[string("OwnBook")]=UCI::Option(true);
-    }
+	//choose opening book
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1") //disable opening book
+	{
+		dgtnixPrintMessageOnClock("nobook", 1);
+		Options[string("OwnBook")]=UCI::Option(false);
+	}
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
+	{
+		dgtnixPrintMessageOnClock("   fun", 1);
+		Options[string("Book File")] = string("../books/fun.bin");
+		Options[string("OwnBook")]=UCI::Option(true);
+	}
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
+	{
+		dgtnixPrintMessageOnClock(" anand", 1);
+		Options[string("Book File")] = string("../books/anand.bin");
+		Options[string("OwnBook")]=UCI::Option(true);
+	}
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
+	{
+		dgtnixPrintMessageOnClock("korchn", 1);
+		Options[string("Book File")] = string("books/korchnoi.bin");
+		Options[string("OwnBook")]=UCI::Option(true);
+	}
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
+	{
+		dgtnixPrintMessageOnClock("larsen", 1);
+		Options[string("Book File")] = string("books/larsen.bin");
+		Options[string("OwnBook")]=UCI::Option(true);
+	}
 
 	//board orientation
 	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") { cout << "right" << endl; dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT); }
@@ -181,16 +181,16 @@ void configure(const string& fen)
 		game.clear();
 		TT.clear();
 	}
-    
-    //shutdown
-    if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1")
-    {
-        //stop the current search
-    	Search::Signals.stop = true;
+
+	//shutdown
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1")
+	{
+		//stop the current search
+		Search::Signals.stop = true;
 		Threads.wait_for_search_finished();
-        dgtnixPrintMessageOnClock("pwroff", 1);
-        system("shutdown -h now");
-    }
+		dgtnixPrintMessageOnClock("pwroff", 1);
+		system("shutdown -h now");
+	}
 }
 
 /// Test if the given fen is playable in the current game.
@@ -204,64 +204,48 @@ Move isPlayable(const string& _fen)
 	//First, we do all the game moves
 	for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it) {
 		states.push(StateInfo());
-	    pos.do_move(*it, states.top());
+		pos.do_move(*it, states.top());
 	}
 
 	//Check is the fen is playable in current game position
 	for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml) {
-					StateInfo state;
-					pos.do_move(ml.move(), state);
-					if (pos.to_fen().find(fen) != string::npos)
-					        return ml.move();
-					pos.undo_move(ml.move());
+		StateInfo state;
+		pos.do_move(ml.move(), state);
+		if (pos.to_fen().find(fen) != string::npos)
+			return ml.move();
+		pos.undo_move(ml.move());
 	}
 
 	//Next we check from the end of the game to the beginning if we reached a position already played
-    //If this is the case, we takeback the moves and return MOVE_NONE
+	//If this is the case, we takeback the moves and return MOVE_NONE
 	for (vector<Move>::reverse_iterator rit=game.rbegin() ; rit < game.rend(); ++rit )
 	{
 		pos.undo_move(*rit);
-        if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
-        {
-            //stop the current search
-    		Search::Signals.stop = true;
+		if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
+		{
+			//stop the current search
+			Search::Signals.stop = true;
 			Threads.wait_for_search_finished();
-	        cout << "Rolling back to position" << pos.to_fen() << endl;
-            dgtnixPrintMessageOnClock(" undo ", 1);
-            game.erase((rit+1).base(),game.end()); //delete the moves from the game
-            return MOVE_NONE;
-        }
+			cout << "Rolling back to position" << pos.to_fen() << endl;
+			dgtnixPrintMessageOnClock(" undo ", 1);
+			game.erase((rit+1).base(),game.end()); //delete the moves from the game
+			return MOVE_NONE;
+		}
 	}
 
 	return MOVE_NONE;
 }
 
-/// Check if we can use a book move
-/// We use this function instead of regular searching for 2 reasons :
-/// - Book event is difficult to handle
-/// - We want to ad a 1 second delay before playing if the move is in book
-bool bookMove(Position &pos)
+/// Prints a move on the dgt clock
+void printMoveOnClock(Move move)
 {
-     static Book book; // Defined static to initialize the PRNG only once
-    if (Options["OwnBook"] && !limits.infinite)
-    {
-        Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
-                
-        if (bookMove && std::count(Search::RootMoves.begin(), Search::RootMoves.end(), bookMove))
-        {
-                          std::swap(Search::RootMoves[0], *std::find(Search::RootMoves.begin(), Search::RootMoves.end(), bookMove));
-                          sleep(1); //do not play immediately
-                          //print the move on the clock
-    		                string dgtMove = move_to_uci(Search::RootMoves[0].pv[0], false);
-                			dgtMove.insert(2, 1, ' ');
-                			if (dgtMove.length() < 6)
-                				dgtMove.append(" ");
-                			cout << '[' << dgtMove << ']' << endl;
-                			dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
-                          return true;
-        }
-    }
-    return false;
+	//print the move on the clock
+	string dgtMove = move_to_uci(move, false);
+	dgtMove.insert(2, 1, ' ');
+	if (dgtMove.length() < 6)
+		dgtMove.append(" ");
+	cout << '[' << dgtMove << ']' << endl;
+	dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
 }
 
 void loop(const string& args) {
@@ -271,7 +255,8 @@ void loop(const string& args) {
 	bool searching = false;
 	limits.movetime = 5000; //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
-   
+	static Book book; // Defined static to initialize the PRNG only once
+
 
 	// DGT Board Initialization
 	int BoardDescriptor;
@@ -291,12 +276,12 @@ void loop(const string& args) {
 			break;
 		default:
 			cout << "Unrecognized response to the DGT_SEND_BRD message :"
-					<< BoardDescriptor << endl;
+			<< BoardDescriptor << endl;
 		}
 		exit(-1);
 	}
 	cout << "The board was found" << BoardDescriptor << endl;
-    sleep(3);
+	sleep(3);
 	dgtnixPrintMessageOnClock(" hello", 1);
 	dgtnixUpdate();
 
@@ -340,14 +325,23 @@ void loop(const string& args) {
 					SetupStates->push(StateInfo());
 					pos.do_move(playerMove,SetupStates->top()); //Do the board move
 				}
-    
-                  if(!bookMove(pos))
-                  {
-                    //Launch the search
-    				dgtnixPrintMessageOnClock("search", 0);
-    				Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
-    				searching = true;
-                  }
+
+				//Check if we can find a move in the book
+				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
+				if(bookMove && Options["OwnBook"] && !limits.infinite)
+				{
+					sleep(1); //don't play immediately, wait for 1 second
+					printMoveOnClock(bookMove);
+					//do the moves in the game
+					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+					game.push_back(bookMove);
+				}
+				else //Launch the search
+				{
+					dgtnixPrintMessageOnClock("search", 0);
+					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+					searching = true;
+				}
 			}
 		}
 
@@ -355,15 +349,7 @@ void loop(const string& args) {
 		if (Search::Signals.stop == true && searching) {
 			searching = false;
 			cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
-
-			//print the move on the clock
-			string dgtMove = move_to_uci(Search::RootMoves[0].pv[0], false);
-			dgtMove.insert(2, 1, ' ');
-			if (dgtMove.length() < 6)
-				dgtMove.append(" ");
-			cout << '[' << dgtMove << ']' << endl;
-			dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
-
+			printMoveOnClock(Search::RootMoves[0].pv[0]);
 			//do the moves in the game
 			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 			game.push_back(Search::RootMoves[0].pv[0]);

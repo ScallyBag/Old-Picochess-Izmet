@@ -33,6 +33,7 @@
 #include "ucioption.h"
 #include "dgtnix.h"
 #include "movegen.h"
+#include "book.h"
 
 using namespace std;
 
@@ -235,6 +236,34 @@ Move isPlayable(const string& _fen)
 	return MOVE_NONE;
 }
 
+/// Check if we can use a book move
+/// We use this function instead of regular searching for 2 reasons :
+/// - Book event is difficult to handle
+/// - We want to ad a 1 second delay before playing if the move is in book
+bool bookMove(Position &pos)
+{
+     static Book book; // Defined static to initialize the PRNG only once
+    if (Options["OwnBook"] && !limits.infinite)
+    {
+        Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
+                
+        if (bookMove && std::count(Search::RootMoves.begin(), Search::RootMoves.end(), bookMove))
+        {
+                          std::swap(Search::RootMoves[0], *std::find(Search::RootMoves.begin(), Search::RootMoves.end(), bookMove));
+                          sleep(1); //do not play immediately
+                          //print the move on the clock
+    		                string dgtMove = move_to_uci(Search::RootMoves[0].pv[0], false);
+                			dgtMove.insert(2, 1, ' ');
+                			if (dgtMove.length() < 6)
+                				dgtMove.append(" ");
+                			cout << '[' << dgtMove << ']' << endl;
+                			dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
+                          return true;
+        }
+    }
+    return false;
+}
+
 void loop(const string& args) {
 	// Initialization
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
@@ -242,6 +271,7 @@ void loop(const string& args) {
 	bool searching = false;
 	limits.movetime = 5000; //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
+   
 
 	// DGT Board Initialization
 	int BoardDescriptor;
@@ -310,11 +340,14 @@ void loop(const string& args) {
 					SetupStates->push(StateInfo());
 					pos.do_move(playerMove,SetupStates->top()); //Do the board move
 				}
-
-				//Launch the search
-				dgtnixPrintMessageOnClock("search", 0);
-				Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
-				searching = true;
+    
+                  if(!bookMove(pos))
+                  {
+                    //Launch the search
+    				dgtnixPrintMessageOnClock("search", 0);
+    				Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+    				searching = true;
+                  }
 			}
 		}
 

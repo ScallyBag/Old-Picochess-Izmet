@@ -101,27 +101,27 @@ string getDgtFEN(char tomove = 'w')
 void configure(const string& fen)
 {
 	//set skill level
-	if(fen=="rnbqkbnr/pppppppp/q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 00", 1); Options[string("Skill Level")] = string("0"); }
-	if(fen=="rnbqkbnr/pppppppp/1q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 01", 1); Options[string("Skill Level")] = string("1"); }
-	if(fen=="rnbqkbnr/pppppppp/2q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 02", 1); Options[string("Skill Level")] = string("2"); }
-	if(fen=="rnbqkbnr/pppppppp/3q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 03", 1); Options[string("Skill Level")] = string("3"); }
-	if(fen=="rnbqkbnr/pppppppp/4q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 04", 1); Options[string("Skill Level")] = string("4"); }
-	if(fen=="rnbqkbnr/pppppppp/5q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 05", 1); Options[string("Skill Level")] = string("5"); }
-	if(fen=="rnbqkbnr/pppppppp/6q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 06", 1); Options[string("Skill Level")] = string("6"); }
-	if(fen=="rnbqkbnr/pppppppp/7q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 07", 1); Options[string("Skill Level")] = string("7"); }
-	if(fen=="rnbqkbnr/pppppppp/8/q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 08", 1); Options[string("Skill Level")] = string("8"); }
-	if(fen=="rnbqkbnr/pppppppp/8/1q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 09", 1); Options[string("Skill Level")] = string("9"); }
-	if(fen=="rnbqkbnr/pppppppp/8/2q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 10", 1); Options[string("Skill Level")] = string("10"); }
-	if(fen=="rnbqkbnr/pppppppp/8/3q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 11", 1); Options[string("Skill Level")] = string("11"); }
-	if(fen=="rnbqkbnr/pppppppp/8/4q3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 12", 1); Options[string("Skill Level")] = string("12"); }
-	if(fen=="rnbqkbnr/pppppppp/8/5q2/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 13", 1); Options[string("Skill Level")] = string("13"); }
-	if(fen=="rnbqkbnr/pppppppp/8/6q1/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 14", 1); Options[string("Skill Level")] = string("14"); }
-	if(fen=="rnbqkbnr/pppppppp/8/7q/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 15", 1); Options[string("Skill Level")] = string("15"); }
-	if(fen=="rnbqkbnr/pppppppp/8/8/q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 16", 1); Options[string("Skill Level")] = string("16"); }
-	if(fen=="rnbqkbnr/pppppppp/8/8/1q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 17", 1); Options[string("Skill Level")] = string("17"); }
-	if(fen=="rnbqkbnr/pppppppp/8/8/2q5/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 18", 1); Options[string("Skill Level")] = string("18"); }
-	if(fen=="rnbqkbnr/pppppppp/8/8/3q4/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 19", 1); Options[string("Skill Level")] = string("19"); }
-	if(fen=="rnbqkbnr/pppppppp/8/8/4q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 20", 1); Options[string("Skill Level")] = string("20"); }
+	if(fen=="rnbqkbnr/pppppppp/q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 00", 1); Options["Skill Level"] = string("0"); }
+	if(fen=="rnbqkbnr/pppppppp/1q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 01", 1); Options["Skill Level"] = string("1"); }
+	if(fen=="rnbqkbnr/pppppppp/2q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 02", 1); Options["Skill Level"] = string("2"); }
+	if(fen=="rnbqkbnr/pppppppp/3q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 03", 1); Options["Skill Level"] = string("3"); }
+	if(fen=="rnbqkbnr/pppppppp/4q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 04", 1); Options["Skill Level"] = string("4"); }
+	if(fen=="rnbqkbnr/pppppppp/5q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 05", 1); Options["Skill Level"] = string("5"); }
+	if(fen=="rnbqkbnr/pppppppp/6q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 06", 1); Options["Skill Level"] = string("6"); }
+	if(fen=="rnbqkbnr/pppppppp/7q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 07", 1); Options["Skill Level"] = string("7"); }
+	if(fen=="rnbqkbnr/pppppppp/8/q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 08", 1); Options["Skill Level"] = string("8"); }
+	if(fen=="rnbqkbnr/pppppppp/8/1q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 09", 1); Options["Skill Level"] = string("9"); }
+	if(fen=="rnbqkbnr/pppppppp/8/2q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 10", 1); Options["Skill Level"] = string("10"); }
+	if(fen=="rnbqkbnr/pppppppp/8/3q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 11", 1); Options["Skill Level"] = string("11"); }
+	if(fen=="rnbqkbnr/pppppppp/8/4q3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 12", 1); Options["Skill Level"] = string("12"); }
+	if(fen=="rnbqkbnr/pppppppp/8/5q2/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 13", 1); Options["Skill Level"] = string("13"); }
+	if(fen=="rnbqkbnr/pppppppp/8/6q1/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 14", 1); Options["Skill Level"] = string("14"); }
+	if(fen=="rnbqkbnr/pppppppp/8/7q/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 15", 1); Options["Skill Level"] = string("15"); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 16", 1); Options["Skill Level"] = string("16"); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/1q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 17", 1); Options["Skill Level"] = string("17"); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/2q5/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 18", 1); Options["Skill Level"] = string("18"); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/3q4/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 19", 1); Options["Skill Level"] = string("19"); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/4q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("lvl 20", 1); Options["Skill Level"] = string("20"); }
 
 	//set time control
 	if(fen=="rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  1", 1); limits=resetLimits; limits.movetime=1000; }
@@ -137,31 +137,31 @@ void configure(const string& fen)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1") //disable opening book
 	{
 		dgtnixPrintMessageOnClock("nobook", 1);
-		Options[string("OwnBook")]=UCI::Option(false);
+		Options["OwnBook"]=UCI::Option(false);
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock("   fun", 1);
-		Options[string("Book File")] = string("../books/fun.bin");
-		Options[string("OwnBook")]=UCI::Option(true);
+		Options["Book File"] = string("../books/fun.bin");
+		Options["OwnBook"]=UCI::Option(true);
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock(" anand", 1);
-		Options[string("Book File")] = string("../books/anand.bin");
-		Options[string("OwnBook")]=UCI::Option(true);
+		Options["Book File"] = string("../books/anand.bin");
+		Options["OwnBook"]=UCI::Option(true);
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock("korchn", 1);
-		Options[string("Book File")] = string("../books/korchnoi.bin");
-		Options[string("OwnBook")]=UCI::Option(true);
+		Options["Book File"] = string("../books/korchnoi.bin");
+		Options["OwnBook"]=UCI::Option(true);
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock("larsen", 1);
-		Options[string("Book File")] = string("../books/larsen.bin");
-		Options[string("OwnBook")]=UCI::Option(true);
+		Options["Book File"] = string("../books/larsen.bin");
+		Options["OwnBook"]=UCI::Option(true);
 	}
 
 	//board orientation

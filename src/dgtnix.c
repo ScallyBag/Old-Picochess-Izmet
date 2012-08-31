@@ -1225,7 +1225,9 @@ int dgtnixInit(const char *port)
     {
       _debug("%s does not respond to the init query.\n" ,port);
       dgtnixClose();
-      return -2;
+      sleep(3);
+      return dgtnixInit(port);
+      //return -2;
     }
   _debug("Board initialised\n");
   return g_pipeEngineReadSide;

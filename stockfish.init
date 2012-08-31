@@ -1,0 +1,25 @@
+#! /bin/sh
+# /etc/init.d/stockfish
+#
+
+# Some things that run always
+touch /var/lock/stockfish
+
+# Carry out specific functions when asked to by the system
+case "$1" in
+  start)
+    echo "Starting stockfish "
+    #nohup /home/miniand/git/Stockfish/src/stockfish dgt /dev/ttyUSB0 &
+    screen -dmUS sf /home/miniand/git/Stockfish/src/stockfish dgt /dev/ttyUSB0
+    ;;
+  stop)
+    echo "Stopping stockfish"
+    pkill stockfish
+    ;;
+  *)
+    echo "Usage: /etc/init.d/stockfish {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0

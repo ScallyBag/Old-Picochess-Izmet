@@ -45,11 +45,10 @@ struct Log : public std::ofstream {
 
 
 struct Time {
-  void restart() { system_time(&t); }
   int64_t msec() const { return time_to_msec(t); }
-  int elapsed() const { return int(current_time().msec() - time_to_msec(t)); }
+  int elapsed() const { return int(current_time().msec() - msec()); }
 
-  static Time current_time() { Time t; t.restart(); return t; }
+  static Time current_time() { Time t; system_time(&t.t); return t; }
 
 private:
   sys_time_t t;
@@ -58,7 +57,7 @@ private:
 
 template<class Entry, int Size>
 struct HashTable {
-  HashTable() : e(Size, Entry()) { memset(&e[0], 0, sizeof(Entry) * Size); }
+  HashTable() : e(Size, Entry()) {}
   Entry* operator[](Key k) { return &e[(uint32_t)k & (Size - 1)]; }
 
 private:

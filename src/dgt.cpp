@@ -137,31 +137,31 @@ void configure(const string& fen)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1") //disable opening book
 	{
 		dgtnixPrintMessageOnClock("nobook", 1);
-		Options["OwnBook"]=UCI::Option(false);
+        UCI::loop("setoption name OwnBook value false");
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock("   fun", 1);
-		Options["Book File"] = string("../books/fun.bin");
-		Options["OwnBook"]=UCI::Option(true);
+		UCI::loop("setoption name Book File value ../books/fun.bin");
+		UCI::loop("setoption name OwnBook value true");
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock(" anand", 1);
-		Options["Book File"] = string("../books/anand.bin");
-		Options["OwnBook"]=UCI::Option(true);
+		UCI::loop("setoption name Book File value ../books/anand.bin");
+		UCI::loop("setoption name OwnBook value true");
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock("korchn", 1);
-		Options["Book File"] = string("../books/korchnoi.bin");
-		Options["OwnBook"]=UCI::Option(true);
+		UCI::loop("setoption name Book File value ../books/korchnoi.bin");
+		UCI::loop("setoption name OwnBook value true");
 	}
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
 	{
 		dgtnixPrintMessageOnClock("larsen", 1);
-		Options["Book File"] = string("../books/larsen.bin");
-		Options["OwnBook"]=UCI::Option(true);
+		UCI::loop("setoption name Book File value ../books/larsen.bin");
+		UCI::loop("setoption name OwnBook value true");
 	}
 
 	//board orientation

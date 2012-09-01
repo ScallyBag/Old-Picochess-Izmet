@@ -278,6 +278,9 @@ void loop(const string& args) {
 	dgtnixPrintMessageOnClock(" hello", 1);
 	dgtnixUpdate();
 
+    //Engine options
+    UCI::loop("setoption name Hash value 512");
+
 	// Get the first board state
 	string currentFEN = getDgtFEN();
 	configure(currentFEN); //useful for orientation

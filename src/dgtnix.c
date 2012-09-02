@@ -506,7 +506,7 @@ unsigned char _characterToLcdCode(char c)
 void dgtnixPrintMessageOnClock(const char * message, int beep)
 {
     unsigned char a,b,c,d,e,f;    
-    if(strlen(message)!=6) 
+    if(strlen(message)<6) 
     {
         perror("dgtnix critical:dgtnixPrintMessageOnClock: invalid message length\n");
         return;

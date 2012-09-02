@@ -198,8 +198,8 @@ void configure(const string& fen)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1")
 	{
 		UCI::loop("stop"); //stop the current search
-		dgtnixPrintMessageOnClock("pwroff", 1);
-		system("shutdown -h now");
+        if(!system("shutdown -h now"))
+		    dgtnixPrintMessageOnClock("pwroff", 1);	
 	}
 }
 

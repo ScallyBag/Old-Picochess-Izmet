@@ -126,15 +126,13 @@ void configure(const string& fen)
 	"rnbqkbnr/pppppppp/8/8/4q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" };
     static vector<string> skill(skillFENs,skillFENs+21);
     
-    vector<string>::iterator it=find(skill.begin(), skill.end(), fen);
-    if(it != skill.end())
+    int idx = find(skill.begin(), skill.end(), fen) - skill.begin();
+    if (idx < skill.size())
     {
         stringstream ss_uci, ss_dgt;
-        ss_uci << distance(skill.begin(), it);
-        UCI::loop(string("setoption name Skill Level value ")+ss_uci.str());
-        ss_dgt << "lvl" ;
-        ss_dgt.width(3);
-        ss_dgt << ss_uci.str() << endl;
+        ss_uci << "setoption name Skill Level value " << idx;
+        ss_dgt << "lvl" << setw(3) << idx;
+        UCI::loop(ss_uci.str());
         dgtnixPrintMessageOnClock(ss_dgt.str().c_str(), 1);
     }
 

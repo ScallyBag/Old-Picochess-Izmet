@@ -126,7 +126,7 @@ void configure(const string& fen)
 	"rnbqkbnr/pppppppp/8/8/4q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" };
     static vector<string> skill(skillFENs,skillFENs+21);
     
-    int idx = find(skill.begin(), skill.end(), fen) - skill.begin();
+    unsigned int idx = find(skill.begin(), skill.end(), fen) - skill.begin();
     if (idx < skill.size())
     {
         stringstream ss_uci, ss_dgt;
@@ -146,36 +146,24 @@ void configure(const string& fen)
 	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 3m", 1); limits=resetLimits; limits.movetime=180000; }
 	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 5m", 1); limits=resetLimits; limits.movetime=300000; }
 
-	//choose opening book
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1") //disable opening book
-	{
-		dgtnixPrintMessageOnClock("nobook", 1);
-        UCI::loop("setoption name OwnBook value false");
-	}
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-	{
-		dgtnixPrintMessageOnClock("   fun", 1);
-		UCI::loop("setoption name Book File value ../books/fun.bin");
-		UCI::loop("setoption name OwnBook value true");
-	}
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-	{
-		dgtnixPrintMessageOnClock(" anand", 1);
-		UCI::loop("setoption name Book File value ../books/anand.bin");
-		UCI::loop("setoption name OwnBook value true");
-	}
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-	{
-		dgtnixPrintMessageOnClock("korchn", 1);
-		UCI::loop("setoption name Book File value ../books/korchnoi.bin");
-		UCI::loop("setoption name OwnBook value true");
-	}
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") 
-	{
-		dgtnixPrintMessageOnClock("larsen", 1);
-		UCI::loop("setoption name Book File value ../books/larsen.bin");
-		UCI::loop("setoption name OwnBook value true");
-	}
+    //choose opening book
+    typedef map<string, string> BookMap; 
+    static const BookMap::value_type rawData[] = {
+       BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "nobook"),
+       BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "fun"),
+       BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "anand"),
+       BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "korchnoi"),
+       BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "larsen")};
+    BookMap book(rawData, rawData + 5);
+    BookMap::iterator it=book.find(fen);
+    if(it!=book.end())
+    {
+        string s=it->second;
+        UCI::loop(string("setoption name Book File value ../books/")+s+".bin");
+        UCI::loop(string("setoption name OwnBook value ")+(s.compare("nobook")?"true":"false"));
+        if(s.size()<6) s.insert(s.begin(), 6 - s.size(), ' ');
+    	dgtnixPrintMessageOnClock(s.c_str(), 1);      
+    }
 
 	//board orientation
 	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") { cout << "right" << endl; dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT); }

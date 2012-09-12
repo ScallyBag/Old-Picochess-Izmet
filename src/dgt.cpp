@@ -35,6 +35,7 @@
 #include "dgtnix.h"
 #include "movegen.h"
 #include "book.h"
+#include "platform.h"
 
 using namespace std;
 
@@ -45,6 +46,25 @@ Search::LimitsType limits, resetLimits;
 Color computerPlays;
 vector<Move> game;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
+
+/*
+class Clock
+{
+    //time in seconds, inc in seconds
+    Clock(int64_t _time=600, int _inc=0)
+    { 
+        wtime=btime=_time*1000;
+        inc=_inc;
+    }
+    
+    void display()
+    {
+        
+    }
+    
+    int64_t wtime, btime; //Remaining time in msec
+    int inc; //Increment time in seconds
+};*/
 
 
 /// Give the current board setup as FEN string
@@ -136,15 +156,40 @@ void configure(const string& fen)
         dgtnixPrintMessageOnClock(ss_dgt.str().c_str(), 1);
     }
 
+    /*
+    Rank 6: 'Fixed time' or 'Medium Time' 
+    1, 3, 5, 10, 15, 30, 60, 120 seconds 
+    
+    Rank 5: 'Tournament levels' 
+    40/4 (40 moves in 4 minutes), 60/15, 60/30, 30/30, 30/60, , 40/40, 40/120, 40/150 
+    
+    Rank 4: 'Blitz' 
+    1, 3, 5, 10, 15, 30, 60, 90  minutes
+    
+    Rank 3 : 'Blitz Fischer' + 'Special Lvl' 
+    3+2, 3+5, 4+5, 5+1, 15+5, 20+10, opponents average, 1/2 opponents average 
+    --------------------------------------------------------------------------
+    I am thinking for a way to put the time control easily.
+    One option is the following. If you put on the board only the white queen (i think it is the auxiliriary queen that comes with the dgt), the time control is the same for both sides. But if you put also the black queen it indicates handicap level.
+    I think that the handicap level has no sense with Fixed time, that is, 6th rank.
+    In the rest of levels if you put white queen on rank 3,4 or 5, so you can use the 6th rank to put the black queen indicating the time control for black.
+    So the rules are 
+    1) the rank of white queen indicates the type of control, the same for both if you only put the white queen.
+    2) If you put the black queen (always on the 6th rank), you can put different time control for each color.
+    3) the FixedTime levels has no option to specify different times for each color because this levels has no strict control.
+    (Javier's idea)
+    +control opponent's average rate (from 30% to 100%) with black queen on 6th rank
+    */
+
 	//set time control
 	if(fen=="rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  1", 1); limits=resetLimits; limits.movetime=1000; }
-	if(fen=="rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  5", 1); limits=resetLimits; limits.movetime=5000; }
-	if(fen=="rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 10", 1); limits=resetLimits; limits.movetime=10000; }
-	if(fen=="rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 20", 1); limits=resetLimits; limits.movetime=20000; }
-	if(fen=="rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 40", 1); limits=resetLimits; limits.movetime=40000; }
-	if(fen=="rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 1m", 1); limits=resetLimits; limits.movetime=60000; }
-	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 3m", 1); limits=resetLimits; limits.movetime=180000; }
-	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 5m", 1); limits=resetLimits; limits.movetime=300000; }
+	if(fen=="rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  3", 1); limits=resetLimits; limits.movetime=3000; }
+	if(fen=="rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  5", 1); limits=resetLimits; limits.movetime=5000; }
+	if(fen=="rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 10", 1); limits=resetLimits; limits.movetime=10000; }
+	if(fen=="rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 15", 1); limits=resetLimits; limits.movetime=15000; }
+	if(fen=="rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 30", 1); limits=resetLimits; limits.movetime=30000; }
+	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 60", 1); limits=resetLimits; limits.movetime=60000; }
+	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov120", 1); limits=resetLimits; limits.movetime=120000; }
 
     //choose opening book
     typedef map<string, string> BookMap; 

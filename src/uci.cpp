@@ -136,6 +136,13 @@ void UCI::loop(const string& args) {
 
           benchmark(pos, ss);
       }
+      
+      else if (token == "endgametest") // Debug testing
+      {
+          MaterialTable table;
+          MaterialEntry *entry=table.probe(pos);
+          cout<<entry->scale_factor(pos, WHITE)<<endl;
+      }
 
       else
           sync_cout << "Unknown command: " << cmd << sync_endl;

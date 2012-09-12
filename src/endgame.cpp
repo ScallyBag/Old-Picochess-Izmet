@@ -938,3 +938,36 @@ ScaleFactor Endgame<KPKP>::operator()(const Position& pos) const {
   // it's probably at least a draw even with the pawn.
   return Bitbases::probe_kpk(wksq, wpsq, bksq, stm) ? SCALE_FACTOR_NONE : SCALE_FACTOR_DRAW;
 }
+
+/// K with one or more pawns vs K. with one or more pawns. 
+/// As described in the "BLOCKAGE DETECTION IN PAWN ENDGAMES" apaper by
+/// Omid David Tabibi, Ariel Felner, Nathan S. Netanyahu, Ramat-Gan
+/// Introduce a blockage-detection method, which manages to detect a large set
+/// of blockage positions in pawn endgames, with practically no additional overhead. By examining
+/// different elements of the pawn structure, the method checks whether the Pawns form a
+/// blockage which prevents the King from penetrating into the opponent's camp. It then checks
+/// several criteria to find out whether the blockage is permanent.
+/// If such a draw is detected, SCALE_FACTOR_DRAW is returned. 
+/// If not, the return value is SCALE_FACTOR_NONE, i.e. no scaling
+/// will be used.
+#include <iostream> //debug test
+template<>
+ScaleFactor Endgame<KPsKPs>::operator()(const Position& pos) const {
+
+  assert(pos.non_pawn_material(strongerSide) == VALUE_ZERO);
+  assert(pos.non_pawn_material(weakerSide) == VALUE_ZERO);
+  assert(pos.piece_count(strongerSide, PAWN) > 1);
+  assert(pos.piece_count(weakerSide, PAWN) > 1);
+  
+  using namespace std; //debug test
+  //Step 1 : Detect fixed pawns
+  //A fixed Pawn for White as a Pawn which is blocked by a black Pawn, or by another
+  //white fixed Pawn, and cannot capture any piece. A fixed Pawn cannot move unless the black Pawn which
+  //blocks it is captured.
+  Bitboard pawns = pos.pieces(strongerSide, PAWN);
+
+  Bitboards::print(pawns); //debug test
+
+  return SCALE_FACTOR_NONE;
+}
+

@@ -57,6 +57,7 @@ namespace {
   Endgame<KQKRPs> ScaleKQKRPs[] = { Endgame<KQKRPs>(WHITE), Endgame<KQKRPs>(BLACK) };
   Endgame<KPsK>   ScaleKPsK[]   = { Endgame<KPsK>(WHITE),   Endgame<KPsK>(BLACK) };
   Endgame<KPKP>   ScaleKPKP[]   = { Endgame<KPKP>(WHITE),   Endgame<KPKP>(BLACK) };
+  Endgame<KPsKPs>   ScaleKPsKPs[]   = { Endgame<KPsKPs>(WHITE),   Endgame<KPsKPs>(BLACK) };
 
   // Helper templates used to detect a given material distribution
   template<Color Us> bool is_KXK(const Position& pos) {
@@ -79,6 +80,14 @@ namespace {
           && pos.piece_count(Us, QUEEN)   == 1
           && pos.piece_count(Them, ROOK)  == 1
           && pos.piece_count(Them, PAWN)  >= 1;
+  }
+  
+  template<Color Us> bool is_KPsKPs(const Position& pos) {
+    const Color Them = (Us == WHITE ? BLACK : WHITE);
+    return   pos.non_pawn_material(Us) == VALUE_ZERO
+          &&  pos.non_pawn_material(Them) == VALUE_ZERO
+          &&  pos.piece_count(Us, PAWN) > 1
+          &&  pos.piece_count(Them, PAWN) > 1;
   }
 
 } // namespace
@@ -154,6 +163,12 @@ MaterialEntry* MaterialTable::probe(const Position& pos) {
   // Generic scaling functions that refer to more then one material
   // distribution. Should be probed after the specialized ones.
   // Note that these ones don't return after setting the function.
+  if (is_KPsKPs<WHITE>(pos))
+      e->scalingFunction[WHITE] = &ScaleKPsKPs[WHITE];
+
+  if (is_KPsKPs<BLACK>(pos))
+      e->scalingFunction[BLACK] = &ScaleKPsKPs[BLACK];
+  
   if (is_KBPsKs<WHITE>(pos))
       e->scalingFunction[WHITE] = &ScaleKBPsK[WHITE];
 

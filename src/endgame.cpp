@@ -951,6 +951,18 @@ ScaleFactor Endgame<KPKP>::operator()(const Position& pos) const {
 /// If not, the return value is SCALE_FACTOR_NONE, i.e. no scaling
 /// will be used.
 #include <iostream> //debug test
+
+template<Square Delta>
+  inline Bitboard move_pawns(Bitboard p) {
+
+    return  Delta == DELTA_N  ?  p << 8
+          : Delta == DELTA_S  ?  p >> 8
+          : Delta == DELTA_NE ? (p & ~FileHBB) << 9
+          : Delta == DELTA_SE ? (p & ~FileHBB) >> 7
+          : Delta == DELTA_NW ? (p & ~FileABB) << 7
+          : Delta == DELTA_SW ? (p & ~FileABB) >> 9 : 0;
+  }
+
 template<>
 ScaleFactor Endgame<KPsKPs>::operator()(const Position& pos) const {
 
@@ -959,14 +971,28 @@ ScaleFactor Endgame<KPsKPs>::operator()(const Position& pos) const {
   assert(pos.piece_count(strongerSide, PAWN) > 1);
   assert(pos.piece_count(weakerSide, PAWN) > 1);
   
-  using namespace std; //debug test
+  Bitboard wpawns=pos.pieces(WHITE, PAWN);
+  Bitboard bpawns=pos.pieces(BLACK, PAWN);
   //Step 1 : Detect fixed pawns
   //A fixed Pawn for White as a Pawn which is blocked by a black Pawn, or by another
   //white fixed Pawn, and cannot capture any piece. A fixed Pawn cannot move unless the black Pawn which
   //blocks it is captured.
-  Bitboard pawns = pos.pieces(strongerSide, PAWN);
+  Bitboard wFixedPawns = (bpawns >> 8) & wpawns;
+  Bitboard bFixedPawns = (wpawns << 8) & bpawns;  
+  //remove pawns that can capture
+  wFixedPawns ^= ((move_pawns<DELTA_SE>(bpawns) | move_pawns<DELTA_SW>(bpawns)) & wFixedPawns);
+  bFixedPawns ^= ((move_pawns<DELTA_NE>(wpawns) | move_pawns<DELTA_NE>(wpawns)) & bFixedPawns);
+  
+  for(int i=0; i<4; i++) //Detect up to 3 pawns blocked by a fixed pawn
+  {
+    wFixedPawns|= ( wFixedPawns >> 8) & wpawns;
+    bFixedPawns|= ( bFixedPawns << 8) & bpawns;
+    //remove pawns that can capture
+    wFixedPawns ^= ((move_pawns<DELTA_SE>(bpawns) | move_pawns<DELTA_SW>(bpawns)) & wFixedPawns);
+    bFixedPawns ^= ((move_pawns<DELTA_NE>(wpawns) | move_pawns<DELTA_NE>(wpawns)) & bFixedPawns);
+  }
 
-  Bitboards::print(pawns); //debug test
+  Bitboards::print(wFixedPawns); //debug test
 
   return SCALE_FACTOR_NONE;
 }

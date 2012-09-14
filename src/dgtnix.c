@@ -423,7 +423,7 @@ void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsi
 {
   static time_t lastMessageTime=0,now;
   time(&now);
-  if(difftime (now,lastMessageTime) < 1.0) sleep(1); //Wait for 1 second between 2 messages
+  if(difftime (now,lastMessageTime) <= 1.0) sleep(1); //Wait for 2 seconds between 2 messages
   time(&lastMessageTime);
     
   if(!(g_debugMode == DGTNIX_DEBUG_OFF))

@@ -23,7 +23,8 @@
 #include <string>
 #include <vector>
 #include <stack>
-#include <iomanip> 
+#include <iomanip>
+#include <unistd.h> 
 
 #include "evaluate.h"
 #include "notation.h"
@@ -321,7 +322,7 @@ void loop(const string& args) {
 	}
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
-	dgtnixPrintMessageOnClock(" hello", 1);
+    	dgtnixPrintMessageOnClock("pic002", 1); //Display version number
 	dgtnixUpdate();
 
     //Engine options

@@ -203,7 +203,7 @@ void configure(const string& fen)
        BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "pro"),
        BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/6q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "gm2001"),
        BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/7q/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "varied")};
-    BookMap book(rawData, rawData + 5);
+    BookMap book(rawData, rawData + 8);
     BookMap::iterator it=book.find(fen);
     if(it!=book.end())
     {

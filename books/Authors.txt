@@ -3,3 +3,10 @@ fun.bin
 anand.bin
 korchnoi.bin
 larsen.bin
+pro.bin
+
+Opening book by Olivier Deville :
+gm2001.bin
+
+Opening book by Marc Lacrosse :
+varied.bin

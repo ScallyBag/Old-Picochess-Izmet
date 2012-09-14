@@ -421,6 +421,11 @@ static void _sendMessageToBoard(int command)
  */
 void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char e, unsigned char f, int beep)
 {
+  static time_t lastMessageTime=0,now;
+  time(&now);
+  if(difftime (now,lastMessageTime) < 1.0) sleep(1); //Wait for 1 second between 2 messages
+  time(&lastMessageTime);
+    
   if(!(g_debugMode == DGTNIX_DEBUG_OFF))
     {
       _debug("Sending message to clock\n"); 

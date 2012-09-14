@@ -23,7 +23,8 @@
 #include <string>
 #include <vector>
 #include <stack>
-#include <iomanip> 
+#include <iomanip>
+#include <unistd.h> 
 
 #include "evaluate.h"
 #include "notation.h"

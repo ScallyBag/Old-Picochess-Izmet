@@ -208,7 +208,7 @@ void configure(const string& fen)
     if(it!=book.end())
     {
         string s=it->second;
-        UCI::loop(string("setoption name Book File value ../books/")+s+".bin");
+        UCI::loop(string("setoption name Book File value /home/miniand/git/Stockfish/books/")+s+".bin");
         UCI::loop(string("setoption name OwnBook value ")+(s.compare("nobook")?"true":"false"));
         if(s.size()<6) s.insert(s.begin(), 6 - s.size(), ' ');
     	dgtnixPrintMessageOnClock(s.c_str(), 1);      

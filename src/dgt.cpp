@@ -353,6 +353,7 @@ void loop(const string& args) {
 
 				playerMove=move;
 				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
+                MoveList<LEGAL> ml(pos); //the legal move list
 
 				// Keep track of position keys along the setup moves (from start position to the
 				// position just before to start searching). Needed by repetition draw detection.
@@ -380,7 +381,16 @@ void loop(const string& args) {
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 					game.push_back(bookMove);
 				}
-				else //Launch the search
+                //Check if there is a single legal move
+                else if(ml.size()==1)
+                {
+                    sleep(1); //don't play immediately, wait for 1 second
+    				printMoveOnClock(ml.move());
+					//do the moves in the game
+					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+					game.push_back(ml.move());
+                }
+				else if(ml.size()) //Launch the search if there are legal moves
 				{
 					dgtnixPrintMessageOnClock("search", 0);
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);

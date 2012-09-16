@@ -1568,8 +1568,8 @@ bool Position::pos_is_ok(int* failedStep) const {
   const bool all = false;
 
   const bool debugBitboards       = all || false;
-  const bool debugKingCount       = all || false;
-  const bool debugKingCapture     = all || false;
+  const bool debugKingCount       = all || true;
+  const bool debugKingCapture     = all || true;
   const bool debugCheckerCount    = all || false;
   const bool debugKey             = all || false;
   const bool debugMaterialKey     = all || false;
@@ -1578,7 +1578,7 @@ bool Position::pos_is_ok(int* failedStep) const {
   const bool debugNonPawnMaterial = all || false;
   const bool debugPieceCounts     = all || false;
   const bool debugPieceList       = all || false;
-  const bool debugCastleSquares   = all || false;
+  const bool debugCastleSquares   = all || true;
 
   *step = 1;
 

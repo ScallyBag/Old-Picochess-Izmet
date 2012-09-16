@@ -43,11 +43,11 @@ using namespace std;
 namespace DGT
 {
 
-Search::LimitsType limits, resetLimits;
-Color computerPlays;
+Search::LimitsType limits, resetLimits, analysisLimits;
+Color computerPlays, analysisSide=WHITE;
 vector<Move> game;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
-bool boardReversed=false;
+bool boardReversed=false, analysisMode=false;
 
 /*
 class Clock
@@ -68,6 +68,32 @@ class Clock
     int inc; //Increment time in seconds
 };*/
 
+/*
+returns a count of the number of items substituted (for use if you want to recursively run this, etc). To use it:
+
+std::string str = "one two three";
+int n = findAndReplace(str, "one", "1");
+*/
+template<class T>
+int inline findAndReplace(T& source, const T& find, const T& replace)
+{
+    int num=0;
+    typename T::size_type fLen = find.size();
+    typename T::size_type rLen = replace.size();
+    for (typename T::size_type pos=0; (pos=source.find(find, pos))!=T::npos; pos+=rLen)
+    {
+        num++;
+        source.replace(pos, fLen, replace);
+    }
+    return num;
+}
+
+///Reverse the board
+void reverseBoard()
+{
+    dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, boardReversed?DGTNIX_BOARD_ORIENTATION_CLOCKLEFT:DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
+    boardReversed=!boardReversed;
+}
 
 /// Give the current board setup as FEN string
 /// char  :  tomove = 'w' or 'b' : the side to move (white is default)
@@ -218,8 +244,7 @@ void configure(string& fen)
 	//board orientation
 	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") 
     { 
-        dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, boardReversed?DGTNIX_BOARD_ORIENTATION_CLOCKLEFT:DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
-        boardReversed=!boardReversed;
+        reverseBoard();
         fen=StartFEN; //trigger new game start
     }
 
@@ -233,6 +258,7 @@ void configure(string& fen)
 		UCI::loop("stop"); //stop the current search
 		game.clear(); //reset the game
 		TT.clear();
+        analysisMode=false;
 	}
 
 	//shutdown
@@ -242,6 +268,32 @@ void configure(string& fen)
         if(!system("shutdown -h now"))
 		    dgtnixPrintMessageOnClock("pwroff", 1);	
 	}
+    
+    //enable analysis mode
+    if(fen=="Q7/8/8/8/8/8/8/8 w KQkq - 0 1" || fen=="7Q/8/8/8/8/8/8/8 w KQkq - 0 1") //check if we need to reverse the board
+    {
+        reverseBoard();
+        fen="8/8/8/8/8/8/8/7Q w KQkq - 0 1";
+    }
+    if(fen=="8/8/8/8/8/8/8/q7 w KQkq - 0 1" || fen=="8/8/8/8/8/8/8/7q w KQkq - 0 1") //check if we need to reverse the board
+    {
+        reverseBoard();
+        fen="q7/8/8/8/8/8/8/8 w KQkq - 0 1";
+    }
+    if(fen=="8/8/8/8/8/8/8/7Q w KQkq - 0 1" || fen=="8/8/8/8/8/8/8/Q7 w KQkq - 0 1") 
+    {
+        analysisMode=true;
+        analysisSide=WHITE;
+        dgtnixPrintMessageOnClock("analys", 1);
+    }
+    if(fen=="q7/8/8/8/8/8/8/8 w KQkq - 0 1" || fen=="7q/8/8/8/8/8/8/8 w KQkq - 0 1")
+    {
+        analysisMode=true;
+        analysisSide=BLACK;
+        dgtnixPrintMessageOnClock("analys", 1);
+    }
+    
+    
 }
 
 /// Test if the given fen is playable in the current game.
@@ -350,63 +402,84 @@ void loop(const string& args) {
 			cout << currentFEN << endl;
 			configure(currentFEN); //on board configuration
 
-			//Test if we reach a playable position in the current game
-			Move move=isPlayable(currentFEN);
-			cout<< "-------------------------Move:" << move <<  endl;
-			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
-			{
-				UCI::loop("stop"); //stop the current search
-
-				playerMove=move;
-				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
-                MoveList<LEGAL> ml(pos); //the legal move list
-
-				// Keep track of position keys along the setup moves (from start position to the
-				// position just before to start searching). Needed by repetition draw detection.
-				Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
-
-				//Do all the game moves
-				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
-				{
-					SetupStates->push(StateInfo());
-					pos.do_move(*it, SetupStates->top());
-				}
-				if(move!=MOVE_NONE)
-				{
-					SetupStates->push(StateInfo());
-					pos.do_move(playerMove,SetupStates->top()); //Do the board move
-				}
-
-				//Check if we can find a move in the book
-				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
-				if(bookMove && Options["OwnBook"] && !limits.infinite)
-				{
-					sleep(1); //don't play immediately, wait for 1 second
-					printMoveOnClock(bookMove);
-					//do the moves in the game
-					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
-					game.push_back(bookMove);
-				}
-                //Check if there is a single legal move
-                else if(ml.size()==1)
+            if(!analysisMode)
+            {
+    			//Test if we reach a playable position in the current game
+    			Move move=isPlayable(currentFEN);
+    			cout<< "-------------------------Move:" << move <<  endl;
+    			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
+    			{
+    				UCI::loop("stop"); //stop the current search
+    
+    				playerMove=move;
+    				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
+                    MoveList<LEGAL> ml(pos); //the legal move list
+    
+    				// Keep track of position keys along the setup moves (from start position to the
+    				// position just before to start searching). Needed by repetition draw detection.
+    				Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
+    
+    				//Do all the game moves
+    				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
+    				{
+    					SetupStates->push(StateInfo());
+    					pos.do_move(*it, SetupStates->top());
+    				}
+    				if(move!=MOVE_NONE)
+    				{
+    					SetupStates->push(StateInfo());
+    					pos.do_move(playerMove,SetupStates->top()); //Do the board move
+    				}
+    
+    				//Check if we can find a move in the book
+    				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
+    				if(bookMove && Options["OwnBook"] && !limits.infinite)
+    				{
+    					sleep(1); //don't play immediately, wait for 1 second
+    					printMoveOnClock(bookMove);
+    					//do the moves in the game
+    					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+    					game.push_back(bookMove);
+    				}
+                    //Check if there is a single legal move
+                    else if(ml.size()==1)
+                    {
+                        sleep(1); //don't play immediately, wait for 1 second
+        				printMoveOnClock(ml.move());
+    					//do the moves in the game
+    					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+    					game.push_back(ml.move());
+                    }
+    				else if(ml.size()) //Launch the search if there are legal moves
+    				{
+    					dgtnixPrintMessageOnClock("search", 0);
+    					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+    					searching = true;
+    				}
+    			}
+            }
+            else //We are in analysis mode
+            { 
+                findAndReplace(currentFEN, string("KQkq"), string("-")); //remove castling state
+                if(analysisSide==BLACK) findAndReplace(currentFEN, string(" w "), string(" b "));//set the color
+                cout << "ANALYSIS fen : " << currentFEN << endl;
+                if(currentFEN.find('k')!=string::npos && currentFEN.find('K')!=string::npos)
                 {
-                    sleep(1); //don't play immediately, wait for 1 second
-    				printMoveOnClock(ml.move());
-					//do the moves in the game
-					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
-					game.push_back(ml.move());
+                    pos.from_fen(currentFEN, false, Threads.main_thread());
+                    int failStep;
+                    if(pos.pos_is_ok(&failStep))
+                    {
+                        UCI::loop("stop"); //stop the current search
+                        analysisLimits.infinite=true;
+                        Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
+                        Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+                    }
                 }
-				else if(ml.size()) //Launch the search if there are legal moves
-				{
-					dgtnixPrintMessageOnClock("search", 0);
-					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
-					searching = true;
-				}
-			}
+            }
 		}
 
 		//Check for finished search
-		if (Search::Signals.stop == true && searching) {
+		if (!analysisMode && Search::Signals.stop == true && searching) {
 			searching = false;
 			cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
 			printMoveOnClock(Search::RootMoves[0].pv[0]);

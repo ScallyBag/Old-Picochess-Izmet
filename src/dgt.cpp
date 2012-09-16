@@ -460,19 +460,20 @@ void loop(const string& args) {
             }
             else //We are in analysis mode
             { 
-                findAndReplace(currentFEN, string("KQkq"), string("-")); //remove castling state
-                if(analysisSide==BLACK) findAndReplace(currentFEN, string(" w "), string(" b "));//set the color
+                string analysisFEN=currentFEN;
+                findAndReplace(analysisFEN, string("KQkq"), string("-")); //remove castling state
+                if(analysisSide==BLACK) findAndReplace(analysisFEN, string(" w "), string(" b "));//set the color
                 cout << "ANALYSIS fen : " << currentFEN << endl;
-                if(currentFEN.find('k')!=string::npos && currentFEN.find('K')!=string::npos)
+                if(analysisFEN.find('k')!=string::npos && analysisFEN.find('K')!=string::npos)
                 {
-                    pos.from_fen(currentFEN, false, Threads.main_thread());
+                    pos.from_fen(analysisFEN, false, Threads.main_thread());
                     int failStep;
                     if(pos.pos_is_ok(&failStep))
                     {
                         UCI::loop("stop"); //stop the current search
                         analysisLimits.infinite=true;
                         Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
-                        Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+                        Threads.start_searching(pos, analysisLimits, vector<Move>(),SetupStates);
                     }
                 }
             }

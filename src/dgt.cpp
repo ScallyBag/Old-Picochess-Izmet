@@ -121,7 +121,7 @@ string getDgtFEN(char tomove = 'w')
 }
 
 /// Change UCI parameters with special positions on the board
-void configure(const string& fen)
+void configure(string& fen)
 {
 	//set skill level
     static string skillFENs[]={
@@ -220,6 +220,7 @@ void configure(const string& fen)
     { 
         dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, boardReversed?DGTNIX_BOARD_ORIENTATION_CLOCKLEFT:DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
         boardReversed=!boardReversed;
+        fen=StartFEN; //trigger new game start
     }
 
 	//set side to play (simply remove the king of the side you are playing and put it back on the board)

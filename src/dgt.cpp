@@ -47,6 +47,7 @@ Search::LimitsType limits, resetLimits;
 Color computerPlays;
 vector<Move> game;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
+bool boardReversed=false;
 
 /*
 class Clock
@@ -215,7 +216,11 @@ void configure(const string& fen)
     }
 
 	//board orientation
-	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") { cout << "right" << endl; dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT); }
+	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") 
+    { 
+        dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, boardReversed?DGTNIX_BOARD_ORIENTATION_CLOCKLEFT:DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
+        boardReversed=!boardReversed;
+    }
 
 	//set side to play (simply remove the king of the side you are playing and put it back on the board)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w KQkq - 0 1") { cout << "You play white"<< endl; computerPlays=BLACK; }

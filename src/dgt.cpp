@@ -303,7 +303,7 @@ void loop(const string& args) {
 	bool searching = false;
 	limits.movetime = 5000; //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
-	static Book book; // Defined static to initialize the PRNG only once
+	static PolyglotBook book; // Defined static to initialize the PRNG only once
 
 
 	// DGT Board Initialization

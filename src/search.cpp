@@ -311,6 +311,9 @@ finalize:
   if (!Signals.stop && (Limits.ponder || Limits.infinite))
       pos.this_thread()->wait_for_stop_or_ponderhit();
 
+
+    Signals.stop=true;   //needed by picochess to know when the search is finished
+
   // Best move could be MOVE_NONE when searching on a stalemate position
   sync_cout << "bestmove " << move_to_uci(RootMoves[0].pv[0], Chess960)
             << " ponder "  << move_to_uci(RootMoves[0].pv[1], Chess960) << sync_endl;

@@ -46,6 +46,7 @@ namespace DGT
 Search::LimitsType limits, resetLimits;
 Color computerPlays;
 vector<Move> game;
+//const char* StartFEN ="r1r4k/4Np1p/3R1PpP/1P2p3/p3P1K1/P6P/8/3R4 w - - 0 1";
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 bool boardReversed=false;
 
@@ -228,7 +229,7 @@ void configure(string& fen)
 	if(fen=="rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { cout << "You play black"<< endl; computerPlays=WHITE; }
 
 	//new game
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+	if(fen==StartFEN)
 	{
 		UCI::loop("stop"); //stop the current search
 		game.clear(); //reset the game

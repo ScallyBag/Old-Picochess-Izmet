@@ -10,3 +10,6 @@ gm2001.bin
 
 Opening book by Marc Lacrosse :
 varied.bin
+
+Opening book by Shivkumar Shivaji :
+gm1950.bin

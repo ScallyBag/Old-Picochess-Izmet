@@ -400,7 +400,7 @@ void loop(const string& args) {
                 }
 				else if(ml.size()) //Launch the search if there are legal moves
 				{
-					dgtnixPrintMessageOnClock("search", 0);
+					dgtnixPrintMessageOnClock("search", 1);
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
 					searching = true;
 				}

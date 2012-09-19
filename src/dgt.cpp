@@ -46,9 +46,10 @@ namespace DGT
 Search::LimitsType limits, resetLimits;
 Color computerPlays;
 vector<Move> game;
-//const char* StartFEN ="r1r4k/4Np1p/3R1PpP/1P2p3/p3P1K1/P6P/8/3R4 w - - 0 1";
-const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 bool boardReversed=false;
+const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
+const char* bookPath="/home/miniand/git/Stockfish/books/";
+
 
 /*
 class Clock
@@ -211,7 +212,7 @@ void configure(string& fen)
     if(it!=book.end())
     {
         string s=it->second;
-        UCI::loop(string("setoption name Book File value /home/miniand/git/Stockfish/books/")+s+".bin");
+        UCI::loop(string("setoption name Book File value ")+bookPath+s+".bin");
         UCI::loop(string("setoption name OwnBook value ")+(s.compare("nobook")?"true":"false"));
         if(s.size()<6) s.insert(s.begin(), 6 - s.size(), ' ');
     	dgtnixPrintMessageOnClock(s.c_str(), 1);      
@@ -338,6 +339,7 @@ void loop(const string& args) {
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
+    UCI::loop(string("setoption name Book File value ")+bookPath+"varied.bin"); //default book
 
 	// Get the first board state
 	string currentFEN = getDgtFEN();

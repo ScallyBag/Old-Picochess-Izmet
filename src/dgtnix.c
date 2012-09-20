@@ -56,6 +56,7 @@
 #include "dgtnix.h"
 
 int dgtnix_errno=0;
+sem_t dgtnixEventSemaphore;
 
 /* The version of the dgtnix driver version as returned by the dgtnixQueryDriverVersion() function */
 /* #define _DGTNIX_DRIVER_VERSION  "1.81" */
@@ -206,6 +207,8 @@ static  char g_boardOrientation=DGTNIX_BOARD_ORIENTATION_CLOCKLEFT;
 static char g_initialised=0;
 /* This mutex is used by to ensure that during a dgtnixGetBoard(...) call, the board is'nt updated */
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
+/* This mutex is used tu ensure we have recieved a clock ack message */
+static pthread_mutex_t clock_ack_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**************************************/
 /* Intern function begins with _...   */
@@ -421,11 +424,16 @@ static void _sendMessageToBoard(int command)
  */
 void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char e, unsigned char f, int beep)
 {
-  static time_t lastMessageTime=0,now;
-  time(&now);
-  if(difftime (now,lastMessageTime) <= 1.0) sleep(1); //Wait for 2 seconds between 2 messages
-  time(&lastMessageTime);
-    
+  //static time_t lastMessageTime=0,now;
+  //time(&now);
+  //if(difftime (now,lastMessageTime) <= 2.0) sleep(1); //Wait for 2 seconds between 2 messages
+  //time(&lastMessageTime);
+
+  printf("WAIT***********************\n");
+  //pthread_mutex_timedlock (&clock_ack_mutex,&tim);
+  pthread_mutex_lock (&clock_ack_mutex);
+  printf("SEND***********************\n");
+
   if(!(g_debugMode == DGTNIX_DEBUG_OFF))
     {
       _debug("Sending message to clock\n"); 
@@ -449,19 +457,30 @@ void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsi
   message[10]=0;
   message[11]=beep?0x03:0x01;
   message[12]=0x00;
+  retry:
   if(write(g_descriptorDriverBoard,&message ,13)!=13)
     {
       perror("dgtnix critical:sendMessageToClock: write() error\n");
       _closeDescriptor(&g_descriptorDriverBoard);
       exit(-1);
     }
-  
-  
+
+    sleep(1); //wait for the ACK message
+    if(pthread_mutex_trylock(&clock_ack_mutex))
+    {
+        printf("WE ARE STUCK! - NO ACK RECEIVED\n");
+        goto retry;
+    }
+    else
+    {
+        printf("YEPEEE  ACK RECEIVED\n");
+        pthread_mutex_unlock(&clock_ack_mutex);
+    }
 }
 
 void dgtnixUpdate()
 {
-    _sendMessageToBoard(_DGTNIX_SEND_UPDATE_BRD);
+    _sendMessageToBoard(_DGTNIX_SEND_UPDATE_NICE);
 }
 
 /* Converts a lowercase ASCII character or digit to DGT Clock representation
@@ -507,10 +526,12 @@ unsigned char _characterToLcdCode(char c)
     return 0;
 }
 
+
 /* Prints a 6 character string message on the DGT Clock */
 void dgtnixPrintMessageOnClock(const char * message, int beep)
 {
-    unsigned char a,b,c,d,e,f;    
+    unsigned char a,b,c,d,e,f; 
+    printf("Sending message:%s\n",message);
     if(strlen(message)<6) 
     {
         perror("dgtnix critical:dgtnixPrintMessageOnClock: invalid message length\n");
@@ -521,7 +542,8 @@ void dgtnixPrintMessageOnClock(const char * message, int beep)
     c=_characterToLcdCode(message[2]);
     d=_characterToLcdCode(message[3]);
     e=_characterToLcdCode(message[4]);
-    f=_characterToLcdCode(message[5]);  
+    f=_characterToLcdCode(message[5]); 
+    
     _sendMessageToClock(a,b,c,d,e,f,beep);
 }
 
@@ -552,6 +574,7 @@ static void *_threadManagedFunc(void *params)
 { 
   g_initialised = 1;
   _queryVendorStrings();
+  sem_init(&dgtnixEventSemaphore,0,0);
   _sendMessageToBoard(_DGTNIX_SEND_UPDATE);
   while( 1 ) 
     {  
@@ -561,6 +584,7 @@ static void *_threadManagedFunc(void *params)
 	  break;
 	}
       /*_dumpBoard(g_board);*/
+      sem_post(&dgtnixEventSemaphore); 
     }
   _closeAllDescriptors();
   g_initialised = 0;
@@ -615,10 +639,25 @@ static int _closeDescriptor(int *descriptor)
 /* 
  *  Manage the reception of the BWTIME message 
  *  function called only by _readMessageFromBoard()
+ *
+ * There are two possible distinct BwTime messages: 1) Clock Times, 2) Clock Ack.
+ * The total size is always 10 bytes and the first byte is always DGT_MSG_BWTIME (=0x4d).
+ * If the (4th byte & 0x0f) equals 0x0a, or if the (7th byte & 0x0f) equals 0x0a, then the 
+ * message is a Clock Ack message. Otherwise it is a Clock Times message.
  */
 static void _bwtimeReceived(unsigned char buffer[7])
 {
   int j;
+  
+  /* Check if we have a clock ack message */
+  if( ((buffer[3]&0x0f) == 0x0a) || ((buffer[6]&0x0f) == 0x0a) )
+  {
+    //clock ack message
+    _debug("clock ACK received\n");
+    pthread_mutex_unlock (&clock_ack_mutex);
+    return;
+  }
+  
   for (j = 0; j < 6; j++)
     buffer[j] = (buffer[ j] >> 4) * 10 + (buffer[ j] & 15);
   if( ((buffer[0] & 15)==8) && (buffer[1] ==0) && ( buffer[2] ==0))

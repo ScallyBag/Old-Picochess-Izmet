@@ -35,6 +35,7 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
+#include "dgtnix.h"
 
 namespace Search {
 
@@ -312,8 +313,10 @@ finalize:
       pos.this_thread()->wait_for_stop_or_ponderhit();
 
 
-    Signals.stop=true;   //needed by picochess to know when the search is finished
-
+    //needed by picochess to know when the search is finished
+    Signals.stop=true;   
+    sem_post(&dgtnixEventSemaphore); 
+    
   // Best move could be MOVE_NONE when searching on a stalemate position
   sync_cout << "bestmove " << move_to_uci(RootMoves[0].pv[0], Chess960)
             << " ponder "  << move_to_uci(RootMoves[0].pv[1], Chess960) << sync_endl;

@@ -93,6 +93,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef __DGTNIX_H
 #define __DGTNIX_H
 
+#include <semaphore.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -282,6 +284,9 @@ extern "C" {
   /* Prints a 6 character string message on the DGT Clock */
   void dgtnixPrintMessageOnClock(const char *, int beep);
   void dgtnixUpdate();
+  
+  /* Event semaphore */
+  extern sem_t dgtnixEventSemaphore;
   
 #ifdef __cplusplus
 }

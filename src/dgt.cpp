@@ -334,8 +334,9 @@ void loop(const string& args) {
 	}
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
-    	dgtnixPrintMessageOnClock("pic003", 1); //Display version number
-	dgtnixUpdate();
+    dgtnixUpdate();
+    dgtnixPrintMessageOnClock("pic003", 1); //Display version number
+	
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
@@ -347,6 +348,8 @@ void loop(const string& args) {
 
 	// Main DGT event loop
 	while (true) {
+        sem_wait(&dgtnixEventSemaphore);
+        cout<<"In event loop!"<<endl;
 		string s = getDgtFEN();
 		if (currentFEN != s) { //There is some change on the DGT board
 			currentFEN = s;
@@ -401,9 +404,9 @@ void loop(const string& args) {
 					game.push_back(ml.move());
                 }
 				else if(ml.size()) //Launch the search if there are legal moves
-				{
-					dgtnixPrintMessageOnClock("search", 1);
+				{				
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+                    dgtnixPrintMessageOnClock("search", 1);
 					searching = true;
 				}
 			}
@@ -419,11 +422,12 @@ void loop(const string& args) {
 			game.push_back(Search::RootMoves[0].pv[0]);
 		}
 
+        /*
 		//sleep
 		struct timespec tim, tim2;
 		tim.tv_sec = 0;
 		tim.tv_nsec = 30000000L;
-		nanosleep(&tim, &tim2);
+		nanosleep(&tim, &tim2);*/
 	}
 
 	dgtnixClose();

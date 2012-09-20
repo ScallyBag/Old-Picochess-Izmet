@@ -341,6 +341,7 @@ void loop(const string& args) {
     //Engine options
     UCI::loop("setoption name Hash value 512");
     UCI::loop(string("setoption name Book File value ")+bookPath+"varied.bin"); //default book
+    UCI::loop(string("setoption name OwnBook value true"));
 
 	// Get the first board state
 	string currentFEN = getDgtFEN();

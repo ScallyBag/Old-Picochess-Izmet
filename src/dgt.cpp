@@ -335,7 +335,7 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic003", 1); //Display version number
+    dgtnixPrintMessageOnClock("pic004", 1); //Display version number
 	
 
     //Engine options

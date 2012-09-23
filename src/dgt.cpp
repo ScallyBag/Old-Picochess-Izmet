@@ -301,6 +301,16 @@ void printMoveOnClock(Move move)
 	dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
 }
 
+void* wakeUpEverySecond(void*)
+{
+    while(true)
+    {
+        sleep(1);
+        sem_post(&dgtnixEventSemaphore);
+    }
+    return NULL;
+}
+
 void loop(const string& args) {
 	// Initialization
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
@@ -347,6 +357,10 @@ void loop(const string& args) {
 	// Get the first board state
 	string currentFEN = getDgtFEN();
 	configure(currentFEN); //useful for orientation
+    
+    // Start the wakeup thread
+    pthread_t wakeUpThread;
+    pthread_create( &wakeUpThread, NULL, wakeUpEverySecond, (void*)NULL);
 
 	// Main DGT event loop
 	while (true) {

@@ -319,6 +319,7 @@ void loop(const string& args) {
 	limits.movetime = 5000; //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
+    Time::point searchStartTime;
 
 
 	// DGT Board Initialization
@@ -366,6 +367,18 @@ void loop(const string& args) {
 	while (true) {
         sem_wait(&dgtnixEventSemaphore);
         cout<<"In event loop!"<<endl;
+        
+        //Display time on clock
+        if(searching && limits.movetime) //If we are in fixed time per move mode, display computer remaining time 
+        {
+            int remainingTime=limits.movetime-(Time::now()-searchStartTime);
+            ostringstream oss;
+            oss << remainingTime/1000;
+            string s=oss.str();
+            if(s.size()<6) s.insert(s.begin(), 6 - s.size(), ' ');
+            dgtnixPrintMessageOnClock(s.c_str(), 0);
+        }
+        
 		string s = getDgtFEN();
 		if (currentFEN != s) { //There is some change on the DGT board
 			currentFEN = s;
@@ -424,6 +437,7 @@ void loop(const string& args) {
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
                     dgtnixPrintMessageOnClock("search", 0);
 					searching = true;
+                    searchStartTime=Time::now();
 				}
 			}
 		}

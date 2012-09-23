@@ -24,7 +24,9 @@
 #include <vector>
 #include <stack>
 #include <iomanip>
-#include <unistd.h> 
+#include <algorithm>
+#include <unistd.h>
+
 
 #include "evaluate.h"
 #include "notation.h"
@@ -56,6 +58,7 @@ int blitzTime, wTime, bTime;
 
 void resetClock()
 {
+    limits=resetLimits;
     if(clockMode==BLITZ) { wTime=bTime=blitzTime; }
 }
 
@@ -385,6 +388,7 @@ void loop(const string& args) {
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime;
     string computerMoveFEN="";
+    bool computerMoveFENReached=false;
 
 
 	// DGT Board Initialization
@@ -431,7 +435,7 @@ void loop(const string& args) {
 	// Main DGT event loop
 	while (true) {
         sem_wait(&dgtnixEventSemaphore);
-        cout<<"In event loop!"<<endl;
+        //cout<<"In event loop!"<<endl;
         string s = getDgtFEN();
         
         //Display time on clock
@@ -443,7 +447,16 @@ void loop(const string& args) {
         }
         else if(clockMode==BLITZ && (searching || (computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos)))  //blitz mode and computer or player thinking
         {
-            printTimeOnClock(2000, 9600000);
+            if(searching)
+            {
+                printTimeOnClock(computerPlays==WHITE?wTime-(Time::now()-searchStartTime):wTime,
+                                computerPlays==BLACK?bTime-(Time::now()-searchStartTime):bTime);
+            }
+            else
+            {
+                printTimeOnClock(computerPlays!=WHITE?wTime-(Time::now()-searchStartTime):wTime,
+                                 computerPlays!=BLACK?bTime-(Time::now()-searchStartTime):bTime);
+            }
         }
         
         
@@ -453,6 +466,13 @@ void loop(const string& args) {
 
 			cout << currentFEN << endl;
 			configure(currentFEN); //on board configuration
+            
+            //Test if we reached the computer move fen
+            if(!searching && !computerMoveFENReached && (computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos))
+            {
+                computerMoveFENReached=true;
+                searchStartTime=Time::now(); //the player starts thinking
+            }
 
 			//Test if we reach a playable position in the current game
 			Move move=isPlayable(currentFEN);
@@ -460,8 +480,15 @@ void loop(const string& args) {
 			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
 			{
 				UCI::loop("stop"); //stop the current search
-
 				playerMove=move;
+                
+                /*
+                //player has just moved : we need to update his remaining time
+                if(computerPlays==WHITE) bTime-=(Time::now()-searchStartTime);
+                else wTime-=(Time::now()-searchStartTime);
+                searchStartTime=Time::now(); //needed if player undoes a move
+                */
+                
 				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
                 MoveList<LEGAL> ml(pos); //the legal move list
 
@@ -481,15 +508,17 @@ void loop(const string& args) {
 					pos.do_move(playerMove,SetupStates->top()); //Do the board move
 				}
 
+                searchStartTime=Time::now();
 				//Check if we can find a move in the book
 				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
 				if(bookMove && Options["OwnBook"] && !limits.infinite)
 				{
-					sleep(1); //don't play immediately, wait for 1 second
+					dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
 					printMoveOnClock(bookMove);
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 					game.push_back(bookMove);
+                    goto finishSearch;
 				}
                 //Check if there is a single legal move
                 else if(ml.size()==1)
@@ -499,13 +528,20 @@ void loop(const string& args) {
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 					game.push_back(ml.move());
+                    goto finishSearch;
                 }
 				else if(ml.size()) //Launch the search if there are legal moves
-				{				
+				{
+                    //set time limits
+                    if(clockMode==BLITZ)
+                    {
+                        limits.time[WHITE]=max(wTime,0);
+                        limits.time[BLACK]=max(bTime,0);
+                    }
+                    
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
                     dgtnixPrintMessageOnClock("search", false, false);
 					searching = true;
-                    searchStartTime=Time::now();
 				}
 			}
 		}
@@ -519,6 +555,7 @@ void loop(const string& args) {
 			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 			game.push_back(Search::RootMoves[0].pv[0]);
             
+            finishSearch:
             //set the FEN we are waiting ofr on the board
             pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
             // Keep track of position keys along the setup moves (from start position to the
@@ -530,7 +567,12 @@ void loop(const string& args) {
 					SetupStates->push(StateInfo());
 					pos.do_move(*it, SetupStates->top());
 				}
+ 
             computerMoveFEN=pos.to_fen();
+            computerMoveFENReached=false;
+            //update clock remaining time
+            if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
+            else bTime-=(Time::now()-searchStartTime);
 		}
 
         /*

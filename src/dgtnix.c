@@ -424,15 +424,7 @@ static void _sendMessageToBoard(int command)
  */
 void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char e, unsigned char f, unsigned char beep, unsigned char dots)
 {
-  //static time_t lastMessageTime=0,now;
-  //time(&now);
-  //if(difftime (now,lastMessageTime) <= 2.0) sleep(1); //Wait for 2 seconds between 2 messages
-  //time(&lastMessageTime);
-
-  printf("WAIT***********************\n");
-  //pthread_mutex_timedlock (&clock_ack_mutex,&tim);
   pthread_mutex_lock (&clock_ack_mutex);
-  printf("SEND***********************\n");
 
   if(!(g_debugMode == DGTNIX_DEBUG_OFF))
     {
@@ -468,12 +460,12 @@ void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsi
     sleep(1); //wait for the ACK message
     if(pthread_mutex_trylock(&clock_ack_mutex))
     {
-        printf("WE ARE STUCK! - NO ACK RECEIVED\n");
+        //printf("WE ARE STUCK! - NO ACK RECEIVED\n");
         goto retry;
     }
     else
     {
-        printf("YEPEEE  ACK RECEIVED\n");
+        //printf("YEPEEE  ACK RECEIVED\n");
         pthread_mutex_unlock(&clock_ack_mutex);
     }
 }

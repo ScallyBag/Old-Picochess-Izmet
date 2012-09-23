@@ -445,8 +445,8 @@ void loop(const string& args) {
             if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1);
             else printTimeOnClock(-1, remainingTime);
         }
-        else if(clockMode==BLITZ && (searching || (computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos)))  //blitz mode and computer or player thinking
-        {
+        else if(clockMode==BLITZ && (searching || computerMoveFENReached))  //blitz mode and computer or player thinking
+        {//(computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos)
             if(searching)
             {
                 printTimeOnClock(computerPlays==WHITE?wTime-(Time::now()-searchStartTime):wTime,
@@ -482,12 +482,13 @@ void loop(const string& args) {
 				UCI::loop("stop"); //stop the current search
 				playerMove=move;
                 
-                /*
                 //player has just moved : we need to update his remaining time
-                if(computerPlays==WHITE) bTime-=(Time::now()-searchStartTime);
-                else wTime-=(Time::now()-searchStartTime);
-                searchStartTime=Time::now(); //needed if player undoes a move
-                */
+                if(!game.empty())
+                {
+                    if(computerPlays==WHITE) bTime-=(Time::now()-searchStartTime);
+                    else wTime-=(Time::now()-searchStartTime);
+                    searchStartTime=Time::now(); //needed if player undoes a move
+                }
                 
 				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
                 MoveList<LEGAL> ml(pos); //the legal move list

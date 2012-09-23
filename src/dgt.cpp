@@ -53,25 +53,11 @@ const char* bookPath="/home/miniand/git/Stockfish/books/";
 enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISHER, SPECIAL} clockMode;
 int blitzTime, wTime, bTime;
 
-/*
-class Clock
-{
-    //time in seconds, inc in seconds
-    Clock(int64_t _time=600, int _inc=0)
-    { 
-        wtime=btime=_time*1000;
-        inc=_inc;
-    }
-    
-    void display()
-    {
-        
-    }
-    
-    int64_t wtime, btime; //Remaining time in msec
-    int inc; //Increment time in seconds
-};*/
 
+void resetClock()
+{
+    if(clockMode==BLITZ) { wTime=bTime=blitzTime; }
+}
 
 /// Give the current board setup as FEN string
 /// char  :  tomove = 'w' or 'b' : the side to move (white is default)
@@ -198,14 +184,14 @@ void configure(string& fen)
 	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov100", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=60000; clockMode=FIXEDTIME;}
 	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov200", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=120000; clockMode=FIXEDTIME;}
     //blitz modes : 1, 3, 5, 10, 15, 30, 60, 90  minutes
-    if(fen=="rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_DOT); blitzTime=60000; wTime=bTime=blitzTime; clockMode=BLITZ;}
-    if(fen=="rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli300", true, DGTNIX_RIGHT_DOT); blitzTime=180000; wTime=bTime=blitzTime; clockMode=BLITZ;}
-	if(fen=="rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli500", true, DGTNIX_RIGHT_DOT); blitzTime=300000; wTime=bTime=blitzTime; clockMode=BLITZ;}
-	if(fen=="rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli000", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1 ); blitzTime=600000; wTime=bTime=blitzTime; clockMode=BLITZ;}
-	if(fen=="rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli500", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1 ); blitzTime=900000; wTime=bTime=blitzTime; clockMode=BLITZ;}
-	if(fen=="rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli030", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=1800000; wTime=bTime=blitzTime; clockMode=BLITZ;}
-	if(fen=="rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=3600000; wTime=bTime=blitzTime; clockMode=BLITZ;}
-	if(fen=="rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli130", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=5400000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+    if(fen=="rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_DOT); blitzTime=60000; clockMode=BLITZ; resetClock(); }
+    if(fen=="rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli300", true, DGTNIX_RIGHT_DOT); blitzTime=180000; clockMode=BLITZ; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli500", true, DGTNIX_RIGHT_DOT); blitzTime=300000; clockMode=BLITZ; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli000", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1 ); blitzTime=600000; clockMode=BLITZ; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli500", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1 ); blitzTime=900000; clockMode=BLITZ; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli030", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=1800000; clockMode=BLITZ; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=3600000; clockMode=BLITZ; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli130", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=5400000; clockMode=BLITZ; resetClock(); }
 
     //choose opening book
     typedef map<string, string> BookMap; 
@@ -249,6 +235,7 @@ void configure(string& fen)
 		UCI::loop("stop"); //stop the current search
 		game.clear(); //reset the game
 		TT.clear();
+        resetClock(); 
 	}
 
 	//shutdown
@@ -397,6 +384,7 @@ void loop(const string& args) {
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime;
+    string computerMoveFEN="";
 
 
 	// DGT Board Initialization
@@ -444,6 +432,7 @@ void loop(const string& args) {
 	while (true) {
         sem_wait(&dgtnixEventSemaphore);
         cout<<"In event loop!"<<endl;
+        string s = getDgtFEN();
         
         //Display time on clock
         if(clockMode==FIXEDTIME && searching) //If we are in fixed time per move mode, display computer remaining time 
@@ -452,13 +441,13 @@ void loop(const string& args) {
             if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1);
             else printTimeOnClock(-1, remainingTime);
         }
-        else if(clockMode==BLITZ)
+        else if(clockMode==BLITZ && (searching || (computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos)))  //blitz mode and computer or player thinking
         {
             printTimeOnClock(2000, 9600000);
         }
         
         
-		string s = getDgtFEN();
+		
 		if (currentFEN != s) { //There is some change on the DGT board
 			currentFEN = s;
 
@@ -529,6 +518,19 @@ void loop(const string& args) {
 			//do the moves in the game
 			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 			game.push_back(Search::RootMoves[0].pv[0]);
+            
+            //set the FEN we are waiting ofr on the board
+            pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
+            // Keep track of position keys along the setup moves (from start position to the
+    		// position just before to start searching). Needed by repetition draw detection.
+			Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
+			//Do all the game moves
+				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
+				{
+					SetupStates->push(StateInfo());
+					pos.do_move(*it, SetupStates->top());
+				}
+            computerMoveFEN=pos.to_fen();
 		}
 
         /*

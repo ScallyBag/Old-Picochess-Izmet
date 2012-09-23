@@ -50,6 +50,8 @@ bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 const char* bookPath="/home/miniand/git/Stockfish/books/";
 
+enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISHER, SPECIAL} clockMode;
+int blitzTime, wTime, bTime;
 
 /*
 class Clock
@@ -157,7 +159,7 @@ void configure(string& fen)
         ss_uci << "setoption name Skill Level value " << idx;
         ss_dgt << "lvl" << setw(3) << idx;
         UCI::loop(ss_uci.str());
-        dgtnixPrintMessageOnClock(ss_dgt.str().c_str(), 1);
+        dgtnixPrintMessageOnClock(ss_dgt.str().c_str(), true, false);
     }
 
     /*
@@ -186,14 +188,24 @@ void configure(string& fen)
     */
 
 	//set time control
-	if(fen=="rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  1", 1); limits=resetLimits; limits.movetime=1000; }
-	if(fen=="rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  3", 1); limits=resetLimits; limits.movetime=3000; }
-	if(fen=="rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov  5", 1); limits=resetLimits; limits.movetime=5000; }
-	if(fen=="rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 10", 1); limits=resetLimits; limits.movetime=10000; }
-	if(fen=="rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 15", 1); limits=resetLimits; limits.movetime=15000; }
-	if(fen=="rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 30", 1); limits=resetLimits; limits.movetime=30000; }
-	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov 60", 1); limits=resetLimits; limits.movetime=60000; }
-	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov120", 1); limits=resetLimits; limits.movetime=120000; }
+    //fixed time per move modes : 1, 3, 5, 10, 15, 30, 60, 120 seconds
+	if(fen=="rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov001", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=1000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov003", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=3000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov005", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=5000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov010", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=10000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov015", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=15000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov030", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=30000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov100", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=60000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov200", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=120000; clockMode=FIXEDTIME;}
+    //blitz modes : 1, 3, 5, 10, 15, 30, 60, 90  minutes
+    if(fen=="rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_DOT); blitzTime=60000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+    if(fen=="rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli300", true, DGTNIX_RIGHT_DOT); blitzTime=180000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+	if(fen=="rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli500", true, DGTNIX_RIGHT_DOT); blitzTime=300000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+	if(fen=="rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli000", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1 ); blitzTime=600000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+	if(fen=="rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli500", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1 ); blitzTime=900000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+	if(fen=="rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli030", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=1800000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+	if(fen=="rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=3600000; wTime=bTime=blitzTime; clockMode=BLITZ;}
+	if(fen=="rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli130", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=5400000; wTime=bTime=blitzTime; clockMode=BLITZ;}
 
     //choose opening book
     typedef map<string, string> BookMap; 
@@ -216,7 +228,7 @@ void configure(string& fen)
         UCI::loop(string("setoption name Book File value ")+bookPath+s+".bin");
         UCI::loop(string("setoption name OwnBook value ")+(s.compare("nobook")?"true":"false"));
         if(s.size()<6) s.insert(s.begin(), 6 - s.size(), ' ');
-    	dgtnixPrintMessageOnClock(s.c_str(), 1);      
+    	dgtnixPrintMessageOnClock(s.c_str(), true, false);      
     }
 
 	//board orientation
@@ -244,7 +256,7 @@ void configure(string& fen)
 	{
 		UCI::loop("stop"); //stop the current search
         if(!system("shutdown -h now"))
-		    dgtnixPrintMessageOnClock("pwroff", 1);	
+		    dgtnixPrintMessageOnClock("pwroff", true, false);	
 	}
 }
 
@@ -280,7 +292,7 @@ Move isPlayable(const string& _fen)
 		{
 			UCI::loop("stop"); //stop the current search
 			cout << "Rolling back to position" << pos.to_fen() << endl;
-			dgtnixPrintMessageOnClock(" undo ", 1);
+			dgtnixPrintMessageOnClock(" undo ", true, false);
 			game.erase((rit+1).base(),game.end()); //delete the moves from the game
 			return MOVE_NONE;
 		}
@@ -298,7 +310,7 @@ void printMoveOnClock(Move move)
 	if (dgtMove.length() < 6)
 		dgtMove.append(" ");
 	cout << '[' << dgtMove << ']' << endl;
-	dgtnixPrintMessageOnClock(dgtMove.c_str(), 1);
+	dgtnixPrintMessageOnClock(dgtMove.c_str(), true, false);
 }
 
 void* wakeUpEverySecond(void*)
@@ -316,7 +328,7 @@ void loop(const string& args) {
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
 	bool searching = false;
-	limits.movetime = 5000; //search defaults to 5 seconds per move
+	limits.movetime = 5000; clockMode=FIXEDTIME; //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime;
@@ -347,7 +359,7 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic004", 1); //Display version number
+    dgtnixPrintMessageOnClock("pic005", true, DGTNIX_RIGHT_DOT); //Display version number
 	
 
     //Engine options
@@ -369,14 +381,14 @@ void loop(const string& args) {
         cout<<"In event loop!"<<endl;
         
         //Display time on clock
-        if(searching && limits.movetime) //If we are in fixed time per move mode, display computer remaining time 
+        if(clockMode==FIXEDTIME && searching) //If we are in fixed time per move mode, display computer remaining time 
         {
             int remainingTime=limits.movetime-(Time::now()-searchStartTime);
             ostringstream oss;
             oss << remainingTime/1000;
             string s=oss.str();
             if(s.size()<6) s.insert(s.begin(), 6 - s.size(), ' ');
-            dgtnixPrintMessageOnClock(s.c_str(), 0);
+            dgtnixPrintMessageOnClock(s.c_str(), false, false);
         }
         
 		string s = getDgtFEN();
@@ -435,7 +447,7 @@ void loop(const string& args) {
 				else if(ml.size()) //Launch the search if there are legal moves
 				{				
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
-                    dgtnixPrintMessageOnClock("search", 0);
+                    dgtnixPrintMessageOnClock("search", false, false);
 					searching = true;
                     searchStartTime=Time::now();
 				}

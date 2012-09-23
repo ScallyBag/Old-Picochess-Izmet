@@ -422,7 +422,7 @@ static void _sendMessageToBoard(int command)
  * Wrapper of the unix write(...) that sends a 
  * message to the DGT board.
  */
-void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char e, unsigned char f, int beep)
+void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char e, unsigned char f, unsigned char beep, unsigned char dots)
 {
   //static time_t lastMessageTime=0,now;
   //time(&now);
@@ -454,7 +454,7 @@ void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsi
   message[7]=f;
   message[8]=e;
   message[9]=d;
-  message[10]=0;
+  message[10]=dots;
   message[11]=beep?0x03:0x01;
   message[12]=0x00;
   retry:
@@ -528,7 +528,7 @@ unsigned char _characterToLcdCode(char c)
 
 
 /* Prints a 6 character string message on the DGT Clock */
-void dgtnixPrintMessageOnClock(const char * message, int beep)
+void dgtnixPrintMessageOnClock(const char * message, unsigned char beep, unsigned char dots)
 {
     unsigned char a,b,c,d,e,f; 
     printf("Sending message:%s\n",message);
@@ -544,7 +544,7 @@ void dgtnixPrintMessageOnClock(const char * message, int beep)
     e=_characterToLcdCode(message[4]);
     f=_characterToLcdCode(message[5]); 
     
-    _sendMessageToClock(a,b,c,d,e,f,beep);
+    _sendMessageToClock(a,b,c,d,e,f,beep,dots);
 }
 
 /*

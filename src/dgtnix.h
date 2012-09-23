@@ -137,6 +137,14 @@ extern "C" {
 #define DGTNIX_DEBUG_ON 0x01
 #define DGTNIX_DEBUG_OFF 0x04
 #define DGTNIX_DEBUG_WITH_TIME 0x08
+
+/*Options to display dot's an ones on the clock */
+#define DGTNIX_RIGHT_DOT 0x01
+#define DGTNIX_RIGHT_SEMICOLON 0x02
+#define DGTNIX_RIGHT_1 0x04
+#define DGTNIX_LEFT_DOT 0x08
+#define DGTNIX_LEFT_SEMICOLON 0x10
+#define DGTNIX_LEFT_1 0x20
   
   /******************************/
   /* API Functions declarations */
@@ -282,7 +290,7 @@ extern "C" {
   const char *dgtnixToPrintableBoard(const char *);
   
   /* Prints a 6 character string message on the DGT Clock */
-  void dgtnixPrintMessageOnClock(const char *, int beep);
+  void dgtnixPrintMessageOnClock(const char *, unsigned char beep, unsigned char dots);
   void dgtnixUpdate();
   
   /* Event semaphore */

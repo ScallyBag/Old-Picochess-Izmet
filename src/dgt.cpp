@@ -301,6 +301,71 @@ Move isPlayable(const string& _fen)
 	return MOVE_NONE;
 }
 
+string getDgtTimeString(int time)
+{
+    if(time<0) return string("   ");
+    stringstream oss;
+    time/=1000;
+    if(time<1200) //minutes.seconds mode
+    {
+        int minutes=time/60;
+        int seconds=time-minutes*60;
+        if(minutes>=10) minutes-=10;
+        oss<<minutes<<setfill ('0')<<setw(2)<<seconds;
+    }
+    else //hours:minutes mode
+    {
+        int hours=time/3600;
+        int minutes=(time-(hours*3600))/60;
+        oss<<hours<<setfill ('0')<<setw(2)<<minutes;
+    }
+    return oss.str();
+}
+
+/// Print time on dgt clock
+void printTimeOnClock(int wClockTime,int bClockTime)
+{
+    string s;
+    unsigned char dots=0;
+    if(!boardReversed)
+    {
+        s=getDgtTimeString(wClockTime)+getDgtTimeString(bClockTime);
+        //white
+        if(wClockTime<1200000) //minutes.seconds mode
+        {
+            dots|=DGTNIX_LEFT_DOT;
+            if(wClockTime>=600000) dots|=DGTNIX_LEFT_1;
+        }
+        else dots|=DGTNIX_LEFT_SEMICOLON; //hours:minutes mode
+        //black
+        if(bClockTime<1200000) //minutes.seconds mode
+        {
+            dots|=DGTNIX_RIGHT_DOT;
+            if(bClockTime>=600000) dots|=DGTNIX_RIGHT_1;
+        }
+        else dots|=DGTNIX_RIGHT_SEMICOLON; //hours:minutes mode
+    }
+    else
+    {
+        s=getDgtTimeString(bClockTime)+getDgtTimeString(wClockTime);
+        //black
+        if(bClockTime<1200000) //minutes.seconds mode
+        {
+            dots|=DGTNIX_LEFT_DOT;
+            if(bClockTime>=600000) dots|=DGTNIX_LEFT_1;
+        }
+        else dots|=DGTNIX_LEFT_SEMICOLON; //hours:minutes mode
+        //white
+        if(wClockTime<1200000) //minutes.seconds mode
+        {
+            dots|=DGTNIX_RIGHT_DOT;
+            if(wClockTime>=600000) dots|=DGTNIX_RIGHT_1;
+        }
+        else dots|=DGTNIX_RIGHT_SEMICOLON; //hours:minutes mode
+    }
+    dgtnixPrintMessageOnClock(s.c_str(), false, dots);
+}
+
 /// Prints a move on the dgt clock
 void printMoveOnClock(Move move)
 {
@@ -384,12 +449,14 @@ void loop(const string& args) {
         if(clockMode==FIXEDTIME && searching) //If we are in fixed time per move mode, display computer remaining time 
         {
             int remainingTime=limits.movetime-(Time::now()-searchStartTime);
-            ostringstream oss;
-            oss << remainingTime/1000;
-            string s=oss.str();
-            if(s.size()<6) s.insert(s.begin(), 6 - s.size(), ' ');
-            dgtnixPrintMessageOnClock(s.c_str(), false, false);
+            if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1);
+            else printTimeOnClock(-1, remainingTime);
         }
+        else if(clockMode==BLITZ)
+        {
+            printTimeOnClock(2000, 9600000);
+        }
+        
         
 		string s = getDgtFEN();
 		if (currentFEN != s) { //There is some change on the DGT board

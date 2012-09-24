@@ -427,7 +427,7 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic005", true, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock("pic006", true, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop("setoption name Hash value 512");

@@ -53,13 +53,14 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 const char* bookPath="/home/miniand/git/Stockfish/books/";
 
 enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISHER, SPECIAL} clockMode;
-int blitzTime, wTime, bTime;
+int fixedTime, blitzTime, wTime, bTime;
 
 
 void resetClock()
 {
     limits=resetLimits;
     if(clockMode==BLITZ) { wTime=bTime=blitzTime; }
+    if(clockMode==FIXEDTIME) { limits.movetime=fixedTime; }
 }
 
 /// Give the current board setup as FEN string
@@ -178,14 +179,14 @@ void configure(string& fen)
 
 	//set time control
     //fixed time per move modes : 1, 3, 5, 10, 15, 30, 60, 120 seconds
-	if(fen=="rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov001", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=1000; clockMode=FIXEDTIME;}
-	if(fen=="rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov003", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=3000; clockMode=FIXEDTIME;}
-	if(fen=="rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov005", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=5000; clockMode=FIXEDTIME;}
-	if(fen=="rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov010", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=10000; clockMode=FIXEDTIME;}
-	if(fen=="rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov015", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=15000; clockMode=FIXEDTIME;}
-	if(fen=="rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov030", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=30000; clockMode=FIXEDTIME;}
-	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov100", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=60000; clockMode=FIXEDTIME;}
-	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov200", true, DGTNIX_RIGHT_DOT); limits=resetLimits; limits.movetime=120000; clockMode=FIXEDTIME;}
+	if(fen=="rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov001", true, DGTNIX_RIGHT_DOT); fixedTime=1000; clockMode=FIXEDTIME; resetClock();}
+	if(fen=="rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov003", true, DGTNIX_RIGHT_DOT); fixedTime=3000; clockMode=FIXEDTIME; resetClock();}
+	if(fen=="rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov005", true, DGTNIX_RIGHT_DOT); fixedTime=5000; clockMode=FIXEDTIME; resetClock();}
+	if(fen=="rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov010", true, DGTNIX_RIGHT_DOT); fixedTime=10000; clockMode=FIXEDTIME; resetClock();}
+	if(fen=="rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov015", true, DGTNIX_RIGHT_DOT); fixedTime=15000; clockMode=FIXEDTIME; resetClock();}
+	if(fen=="rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov030", true, DGTNIX_RIGHT_DOT); fixedTime=30000; clockMode=FIXEDTIME; resetClock();}
+	if(fen=="rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov100", true, DGTNIX_RIGHT_DOT); fixedTime=60000; clockMode=FIXEDTIME; resetClock();}
+	if(fen=="rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("mov200", true, DGTNIX_RIGHT_DOT); fixedTime=120000; clockMode=FIXEDTIME; resetClock();}
     //blitz modes : 1, 3, 5, 10, 15, 30, 60, 90  minutes
     if(fen=="rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_DOT); blitzTime=60000; clockMode=BLITZ; resetClock(); }
     if(fen=="rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli300", true, DGTNIX_RIGHT_DOT); blitzTime=180000; clockMode=BLITZ; resetClock(); }
@@ -313,7 +314,7 @@ string getDgtTimeString(int time)
 }
 
 /// Print time on dgt clock
-void printTimeOnClock(int wClockTime,int bClockTime)
+void printTimeOnClock(int wClockTime,int bClockTime, bool wDots=true, bool bDots=true)
 {
     string s;
     unsigned char dots=0;
@@ -323,17 +324,17 @@ void printTimeOnClock(int wClockTime,int bClockTime)
         //white
         if(wClockTime<1200000) //minutes.seconds mode
         {
-            dots|=DGTNIX_LEFT_DOT;
+            if(wDots) dots|=DGTNIX_LEFT_DOT;
             if(wClockTime>=600000) dots|=DGTNIX_LEFT_1;
         }
-        else dots|=DGTNIX_LEFT_SEMICOLON; //hours:minutes mode
+        else if(wDots) dots|=DGTNIX_LEFT_SEMICOLON; //hours:minutes mode
         //black
         if(bClockTime<1200000) //minutes.seconds mode
         {
-            dots|=DGTNIX_RIGHT_DOT;
+            if(bDots) dots|=DGTNIX_RIGHT_DOT;
             if(bClockTime>=600000) dots|=DGTNIX_RIGHT_1;
         }
-        else dots|=DGTNIX_RIGHT_SEMICOLON; //hours:minutes mode
+        else if(bDots) dots|=DGTNIX_RIGHT_SEMICOLON; //hours:minutes mode
     }
     else
     {
@@ -341,17 +342,17 @@ void printTimeOnClock(int wClockTime,int bClockTime)
         //black
         if(bClockTime<1200000) //minutes.seconds mode
         {
-            dots|=DGTNIX_LEFT_DOT;
+            if(bDots) dots|=DGTNIX_LEFT_DOT;
             if(bClockTime>=600000) dots|=DGTNIX_LEFT_1;
         }
-        else dots|=DGTNIX_LEFT_SEMICOLON; //hours:minutes mode
+        else if(bDots) dots|=DGTNIX_LEFT_SEMICOLON; //hours:minutes mode
         //white
         if(wClockTime<1200000) //minutes.seconds mode
         {
-            dots|=DGTNIX_RIGHT_DOT;
+            if(wDots) dots|=DGTNIX_RIGHT_DOT;
             if(wClockTime>=600000) dots|=DGTNIX_RIGHT_1;
         }
-        else dots|=DGTNIX_RIGHT_SEMICOLON; //hours:minutes mode
+        else if(wDots) dots|=DGTNIX_RIGHT_SEMICOLON; //hours:minutes mode
     }
     dgtnixPrintMessageOnClock(s.c_str(), false, dots);
 }
@@ -383,7 +384,7 @@ void loop(const string& args) {
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
 	bool searching = false;
-	limits.movetime = 5000; clockMode=FIXEDTIME; //search defaults to 5 seconds per move
+	fixedTime = 5000; clockMode=FIXEDTIME; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime;
@@ -442,8 +443,8 @@ void loop(const string& args) {
         if(clockMode==FIXEDTIME && searching) //If we are in fixed time per move mode, display computer remaining time 
         {
             int remainingTime=limits.movetime-(Time::now()-searchStartTime);
-            if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1);
-            else printTimeOnClock(-1, remainingTime);
+            if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, (remainingTime/1000)%2 , false);
+            else printTimeOnClock(-1, remainingTime, false, (remainingTime/1000)%2 );
         }
         else if(clockMode==BLITZ && (searching || computerMoveFENReached))  //blitz mode and computer or player thinking
         {//(computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos)

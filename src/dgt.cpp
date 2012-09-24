@@ -52,15 +52,16 @@ bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 const char* bookPath="/home/miniand/git/Stockfish/books/";
 
-enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISHER, SPECIAL} clockMode;
-int fixedTime, blitzTime, wTime, bTime;
+enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL} clockMode;
+int fixedTime, blitzTime, fischerInc, wTime, bTime;
 
 
 void resetClock()
 {
     limits=resetLimits;
-    if(clockMode==BLITZ) { wTime=bTime=blitzTime; }
-    if(clockMode==FIXEDTIME) { limits.movetime=fixedTime; }
+    if(clockMode==BLITZ) { wTime=bTime=blitzTime; fischerInc=0; }
+    if(clockMode==BLITZFISCHER) { wTime=bTime=blitzTime; }
+    if(clockMode==FIXEDTIME) { limits.movetime=fixedTime; }  
 }
 
 /// Give the current board setup as FEN string
@@ -196,6 +197,14 @@ void configure(string fen)
 	if(fen=="rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli030", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=1800000; clockMode=BLITZ; resetClock(); }
 	if(fen=="rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli100", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=3600000; clockMode=BLITZ; resetClock(); }
 	if(fen=="rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("bli130", true, DGTNIX_RIGHT_SEMICOLON); blitzTime=5400000; clockMode=BLITZ; resetClock(); }
+    //'Blitz Fischer' + 'Special Lvl' 3+2, 3+5, 4+5, 5+1, 15+5, 20+10, opponents average, 1/2 opponents average
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f 32  ", true, false); blitzTime=180000; fischerInc=2000; clockMode=BLITZFISCHER; resetClock(); }
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f 35  ", true, false); blitzTime=180000; fischerInc=5000; clockMode=BLITZFISCHER; resetClock(); }
+    if(fen=="rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f 45  ", true, false); blitzTime=240000; fischerInc=5000; clockMode=BLITZFISCHER; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f 51  ", true, false); blitzTime=300000; fischerInc=1000; clockMode=BLITZFISCHER; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f155  ", true, false); blitzTime=900000; fischerInc=5000; clockMode=BLITZFISCHER; resetClock(); }
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f2010 ", true, false); blitzTime=1200000; fischerInc=10000; clockMode=BLITZFISCHER; resetClock(); }
+    
 
     //choose opening book
     typedef map<string, string> BookMap; 
@@ -446,7 +455,7 @@ void loop(const string& args) {
             if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, blink(), false);
             else printTimeOnClock(-1, remainingTime, false, blink());
         }
-        else if(clockMode==BLITZ && (searching || (computerMoveFENReached && !isPlayable(s))))  //blitz mode and computer or player thinking
+        else if( (clockMode==BLITZ || clockMode==BLITZFISCHER) && (searching || (computerMoveFENReached && !isPlayable(s))))  //blitz mode and computer or player thinking
         {
             if( searching != (computerPlays==BLACK) ) printTimeOnClock(wTime-(Time::now()-searchStartTime),bTime,blink(),true);
             else printTimeOnClock(wTime,bTime-(Time::now()-searchStartTime), true, blink());
@@ -462,6 +471,9 @@ void loop(const string& args) {
             if(!searching && !computerMoveFENReached && (computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos))
             {
                 computerMoveFENReached=true;
+                //Add fischer increment time to the player's clock
+                if(computerPlays!=WHITE) wTime+=fischerInc;
+                else bTime+=fischerInc;
                 searchStartTime=Time::now(); //the player starts thinking
             }
 
@@ -499,6 +511,10 @@ void loop(const string& args) {
 					SetupStates->push(StateInfo());
 					pos.do_move(playerMove,SetupStates->top()); //Do the board move
 				}
+                
+                //Add fischer increment time to the computer's clock
+                if(computerPlays==WHITE) wTime+=fischerInc;
+                else bTime+=fischerInc;
       
 				//Check if we can find a move in the book
 				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
@@ -525,10 +541,11 @@ void loop(const string& args) {
 				{
                     searchStartTime=Time::now();
                     //set time limits
-                    if(clockMode==BLITZ)
+                    if(clockMode==BLITZ || clockMode==BLITZFISCHER)
                     {
-                        limits.time[WHITE]=max(wTime,0)*30/100;
-                        limits.time[BLACK]=max(bTime,0)*30/100;
+                        limits.time[WHITE]=(max(wTime,0)*30)/100;
+                        limits.time[BLACK]=(max(bTime,0)*30)/100;
+                        limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
                     }
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
                     //dgtnixPrintMessageOnClock("search", false, false);

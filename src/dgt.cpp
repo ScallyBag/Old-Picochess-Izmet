@@ -527,8 +527,8 @@ void loop(const string& args) {
                     //set time limits
                     if(clockMode==BLITZ)
                     {
-                        limits.time[WHITE]=max(wTime,0);
-                        limits.time[BLACK]=max(bTime,0);
+                        limits.time[WHITE]=max(wTime,0)*30/100;
+                        limits.time[BLACK]=max(bTime,0)*30/100;
                     }
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
                     //dgtnixPrintMessageOnClock("search", false, false);

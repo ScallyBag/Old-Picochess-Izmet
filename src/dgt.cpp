@@ -379,6 +379,8 @@ void* wakeUpEverySecond(void*)
     return NULL;
 }
 
+bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or false every second
+
 void loop(const string& args) {
 	// Initialization
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
@@ -390,7 +392,6 @@ void loop(const string& args) {
     Time::point searchStartTime;
     string computerMoveFEN="";
     bool computerMoveFENReached=false;
-
 
 	// DGT Board Initialization
 	int BoardDescriptor;
@@ -418,7 +419,6 @@ void loop(const string& args) {
 	sleep(3);
     dgtnixUpdate();
     dgtnixPrintMessageOnClock("pic005", true, DGTNIX_RIGHT_DOT); //Display version number
-	
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
@@ -443,25 +443,15 @@ void loop(const string& args) {
         if(clockMode==FIXEDTIME && searching) //If we are in fixed time per move mode, display computer remaining time 
         {
             int remainingTime=limits.movetime-(Time::now()-searchStartTime);
-            if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, (remainingTime/1000)%2 , false);
-            else printTimeOnClock(-1, remainingTime, false, (remainingTime/1000)%2 );
+            if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, blink(), false);
+            else printTimeOnClock(-1, remainingTime, false, blink());
         }
         else if(clockMode==BLITZ && (searching || computerMoveFENReached))  //blitz mode and computer or player thinking
-        {//(computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos)
-            if(searching)
-            {
-                printTimeOnClock(computerPlays==WHITE?wTime-(Time::now()-searchStartTime):wTime,
-                                computerPlays==BLACK?bTime-(Time::now()-searchStartTime):bTime);
-            }
-            else
-            {
-                printTimeOnClock(computerPlays!=WHITE?wTime-(Time::now()-searchStartTime):wTime,
-                                 computerPlays!=BLACK?bTime-(Time::now()-searchStartTime):bTime);
-            }
+        {
+            if( searching != (computerPlays==BLACK) ) printTimeOnClock(wTime-(Time::now()-searchStartTime),bTime,blink(),true);
+            else printTimeOnClock(wTime,bTime-(Time::now()-searchStartTime), true, blink());
         }
         
-        
-		
 		if (currentFEN != s) { //There is some change on the DGT board
 			currentFEN = s;
 
@@ -577,12 +567,6 @@ void loop(const string& args) {
             else bTime-=(Time::now()-searchStartTime);
 		}
 
-        /*
-		//sleep
-		struct timespec tim, tim2;
-		tim.tv_sec = 0;
-		tim.tv_nsec = 30000000L;
-		nanosleep(&tim, &tim2);*/
 	}
 
 	dgtnixClose();

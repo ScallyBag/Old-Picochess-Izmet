@@ -446,7 +446,7 @@ void loop(const string& args) {
             if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, blink(), false);
             else printTimeOnClock(-1, remainingTime, false, blink());
         }
-        else if(clockMode==BLITZ && (searching || computerMoveFENReached))  //blitz mode and computer or player thinking
+        else if(clockMode==BLITZ && (searching || (computerMoveFENReached && !isPlayable(s))))  //blitz mode and computer or player thinking
         {
             if( searching != (computerPlays==BLACK) ) printTimeOnClock(wTime-(Time::now()-searchStartTime),bTime,blink(),true);
             else printTimeOnClock(wTime,bTime-(Time::now()-searchStartTime), true, blink());

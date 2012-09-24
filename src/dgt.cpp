@@ -115,7 +115,7 @@ string getDgtFEN(char tomove = 'w')
 }
 
 /// Change UCI parameters with special positions on the board
-void configure(string& fen)
+void configure(string fen)
 {
 	//set skill level
     static string skillFENs[]={
@@ -226,7 +226,7 @@ void configure(string& fen)
     { 
         dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, boardReversed?DGTNIX_BOARD_ORIENTATION_CLOCKLEFT:DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
         boardReversed=!boardReversed;
-        fen=StartFEN; //trigger new game start
+        sem_post(&dgtnixEventSemaphore); //trigger new game start
     }
 
 	//set side to play (simply remove the king of the side you are playing and put it back on the board)
@@ -499,8 +499,7 @@ void loop(const string& args) {
 					SetupStates->push(StateInfo());
 					pos.do_move(playerMove,SetupStates->top()); //Do the board move
 				}
-
-                searchStartTime=Time::now();
+      
 				//Check if we can find a move in the book
 				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
 				if(bookMove && Options["OwnBook"] && !limits.infinite)
@@ -524,15 +523,15 @@ void loop(const string& args) {
                 }
 				else if(ml.size()) //Launch the search if there are legal moves
 				{
+                    searchStartTime=Time::now();
                     //set time limits
                     if(clockMode==BLITZ)
                     {
                         limits.time[WHITE]=max(wTime,0);
                         limits.time[BLACK]=max(bTime,0);
                     }
-                    
 					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
-                    dgtnixPrintMessageOnClock("search", false, false);
+                    //dgtnixPrintMessageOnClock("search", false, false);
 					searching = true;
 				}
 			}
@@ -545,7 +544,10 @@ void loop(const string& args) {
 			printMoveOnClock(Search::RootMoves[0].pv[0]);
 			//do the moves in the game
 			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
-			game.push_back(Search::RootMoves[0].pv[0]);
+			game.push_back(Search::RootMoves[0].pv[0]);      
+            //update clock remaining time
+            if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
+            else bTime-=(Time::now()-searchStartTime);
             
             finishSearch:
             //set the FEN we are waiting ofr on the board
@@ -559,12 +561,8 @@ void loop(const string& args) {
 					SetupStates->push(StateInfo());
 					pos.do_move(*it, SetupStates->top());
 				}
- 
             computerMoveFEN=pos.to_fen();
             computerMoveFENReached=false;
-            //update clock remaining time
-            if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
-            else bTime-=(Time::now()-searchStartTime);
 		}
 
 	}

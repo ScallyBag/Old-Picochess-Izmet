@@ -33,14 +33,12 @@
 
 <p><img src="http://img24.imageshack.us/img24/6651/imgp0232r.png" alt="MK802 II"></p>
 
-<p>Currently the <a href="http://store.cloudsto.com/rikomagic/rikomagic-mk802-ii-detail.html">Rikomagic MK 802 II</a> is supported , and I also plan to support the <a href="http://www.raspberrypi.org/">Raspberry Pi</a></p>
+<p>Currently the <a href="http://store.cloudsto.com/rikomagic/rikomagic-mk802-ii-detail.html">Rikomagic MK 802 II</a> and  the <a href="http://www.raspberrypi.org/">Raspberry Pi</a> are supported.</p>
 
 <h2>Status</h2>
 
-<p>PicoChess is working on the 802MK II ARM device.
+<p>PicoChess is working on the 802MK II ARM device an Raspberry Pi.
 You can see a <a href="http://www.dailymotion.com/video/xt2eul_pichess_tech">video of PicoChess running on a standard PC</a>, and <a href="http://www.dailymotion.com/video/xt4b85_pichess2_tech">running on a MK802 II ARM key</a> :-) </p>
-
-<p>It is not yet released for Raspberry Pi, because there is a nasty <a href="http://www.raspberrypi.org/phpBB3/viewtopic.php?f=44&amp;t=8010&amp;p=158380">bug</a> in the Raspberry Pi USB firmware causing the device to hang.</p>
 
 <p>Done so far :</p>
 
@@ -52,18 +50,14 @@ You can see a <a href="http://www.dailymotion.com/video/xt2eul_pichess_tech">vid
 <li>Allow to takeback moves</li>
 <li>Software shutdown</li>
 <li>Add opening books, and allow opening book selection</li>
-<li>Blitz and fixed time per move time controls</li>
+<li>Blitz, Fischer, and fixed time per move time controls</li>
 </ul><h2>Download and installation</h2>
 
 <p>You will have to download install the latest PicoChess image file and write it to a micro SD card.</p>
 
 <ul>
 <li><a href="http://www.lalmanach.info/picochess/picochess-MK802II-v0.6.7z">PicoChess MK802II v0.6 (4GB micro SD Card)</a></li>
-<li><a href="http://www.lalmanach.info/picochess/picochess-MK802II-v0.5.7z">PicoChess MK802II v0.5 (4GB micro SD Card)</a></li>
-<li><a href="http://www.lalmanach.info/picochess/picochess-MK802II-v0.4.7z">PicoChess MK802II v0.4 (4GB micro SD Card)</a></li>
-<li><a href="http://www.lalmanach.info/picochess/picochess-MK802II-v0.3.7z">PicoChess MK802II v0.3 (4GB micro SD Card)</a></li>
-<li><a href="http://www.lalmanach.info/picochess/picochess-MK802II-v0.2.7z">PicoChess MK802II v0.2 (4GB micro SD Card)</a></li>
-<li><a href="http://www.lalmanach.info/picochess/picochess-MK802II-v0.1.7z">PicoChess MK802II v0.1 (8GB micro SD Card)</a></li>
+<li><a href="http://www.lalmanach.info/picochess/picochess-RaspberryPi-v0.6.xz">PicoChess Raspberry Pi v0.6 (4GB micro SD Card)</a></li>
 </ul><p>You will need to unzip the image with <a href="http://www.7-zip.org/">7zip</a> and write it to a suitable SD card using the UNIX tool <a href="http://manpages.ubuntu.com/manpages/lucid/man1/dd.1.html">dd</a>. Windows users should use <a href="https://launchpad.net/win32-image-writer">Win32DiskImager</a>. Do not try to drag and drop or otherwise copy over the image without using dd or Win32DiskImager – it won’t work.</p>
 
 <h4>Copying the image to an SD Card on Windows</h4>
@@ -72,11 +66,11 @@ You can see a <a href="http://www.dailymotion.com/video/xt2eul_pichess_tech">vid
 <li>Insert the SD card into your SD card reader and check what drive letter it was assigned. You can easily see the drive letter (for example G:) by looking in the left column of Windows Explorer. If the card is not new, you should format it; otherwise Win32DiskImager may hang.</li>
 <li>Download the <a href="https://launchpad.net/win32-image-writer">Win32DiskImager utility</a>. The download links are on the right hand side of the page, you want the binary zip.</li>
 <li>Extract the executable from the zip file and run the Win32DiskImager utility. You may need to run the utility as Administrator.</li>
-<li>Select the picochess-MK802II-vx.x.img image file you extracted earlier</li>
+<li>Select the picochess-MK802II/RaspberryPi-vx.x.img image file you extracted earlier</li>
 <li>Select the drive letter of the SD card in the device box. Be careful to select the correct drive; if you get the wrong one you can destroy your computer's hard disk!</li>
 <li>Click Write and wait for the write to complete.</li>
 <li>Exit the imager and eject the SD card.</li>
-<li>Insert the card in the MK802II, connect it to a DGT eboard and XL clock, power it on, and it should boot up with a nice 'Hello' message on the clock after 1-2 minutes.</li>
+<li>Insert the card in the MK802II/RaspberryPi, connect it to a DGT eboard and XL clock, power it on, and it should boot up with a nice 'Hello' message on the clock after 1-2 minutes.</li>
 <li>Play !</li>
 </ol><h2>Playing strength</h2>
 

@@ -533,10 +533,14 @@ void loop(const string& args) {
 					game.push_back(bookMove);
                     goto finishSearch;
 				}
+                //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
+                //It does not detect stalemates
+                else if(pos.is_draw<false>())
+                    dgtnixPrintMessageOnClock("  draw", true, false);
                 //Check if there is a single legal move
                 else if(ml.size()==1)
                 {
-                    sleep(1); //don't play immediately, wait for 1 second
+                    //sleep(1); //don't play immediately, wait for 1 second
     				printMoveOnClock(ml.move());
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);

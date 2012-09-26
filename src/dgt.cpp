@@ -44,16 +44,16 @@ using namespace std;
 
 namespace DGT
 {
-
+//Global declarations
 Search::LimitsType limits, resetLimits;
 Color computerPlays;
 vector<Move> game;
 bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 const char* bookPath="/home/miniand/git/Stockfish/books/";
-
 enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL} clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
+bool computerMoveFENReached=false, searching = false;
 
 
 void resetClock()
@@ -63,6 +63,8 @@ void resetClock()
     if(clockMode==BLITZFISCHER) { wTime=bTime=blitzTime; }
     if(clockMode==FIXEDTIME) { limits.movetime=fixedTime; }  
 }
+void printTimeOnClock(int wClockTime,int bClockTime, bool wDots, bool bDots);
+
 
 /// Give the current board setup as FEN string
 /// char  :  tomove = 'w' or 'b' : the side to move (white is default)
@@ -246,9 +248,15 @@ void configure(string fen)
 	if(fen==StartFEN)
 	{
 		UCI::loop("stop"); //stop the current search
+        computerMoveFENReached=false;
+        searching=false;
 		game.clear(); //reset the game
 		TT.clear();
-        resetClock(); 
+        resetClock();
+        if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+            printTimeOnClock(wTime,bTime,true,true);
+        else
+            dgtnixPrintMessageOnClock("newgam", false, false);
 	}
 
 	//shutdown
@@ -394,13 +402,11 @@ void loop(const string& args) {
 	// Initialization
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
-	bool searching = false;
 	fixedTime = 5000; clockMode=FIXEDTIME; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime;
     string computerMoveFEN="";
-    bool computerMoveFENReached=false;
 
 	// DGT Board Initialization
 	int BoardDescriptor;

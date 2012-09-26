@@ -595,6 +595,17 @@ void loop(const string& args) {
 				}
             computerMoveFEN=pos.to_fen();
             computerMoveFENReached=false;
+            
+            //check for draw
+            if(pos.is_draw<false>()) { sleep(3); dgtnixPrintMessageOnClock("  draw", true, false); }
+            //check for mate or stalemate
+            MoveList<LEGAL> ml(pos); //the legal move list
+            if(!ml.size())
+            {
+                sleep(3);
+                if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
+                else dgtnixPrintMessageOnClock("stlmat", true, false);
+            }
 		}
 
 	}

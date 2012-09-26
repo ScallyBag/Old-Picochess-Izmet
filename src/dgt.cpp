@@ -561,6 +561,11 @@ void loop(const string& args) {
                     //dgtnixPrintMessageOnClock("search", false, false);
 					searching = true;
 				}
+                else //no move to play : we are mate or stalemate
+                {
+                    if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
+                    else dgtnixPrintMessageOnClock("stlmat", true, false);
+                }
 			}
 		}
 

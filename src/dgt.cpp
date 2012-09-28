@@ -608,8 +608,18 @@ void loop(const string& args) {
             computerMoveFEN=pos.to_fen();
             computerMoveFENReached=false;
             
+            MoveList<LEGAL> ml(pos); //the legal move list
+            //check for draw
+            if(pos.is_draw<false>()) { sleep(3); dgtnixPrintMessageOnClock("  draw", true, false); }
+            //check for mate or stalemate
+            else if(!ml.size())
+            {
+                sleep(3);
+                if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
+                else dgtnixPrintMessageOnClock("stlmat", true, false);
+            }
             //Ponder
-            if(!Search::RootMoves.empty() && Search::RootMoves[0].pv[1]!=MOVE_NONE)
+            else if(!Search::RootMoves.empty() && Search::RootMoves[0].pv[1]!=MOVE_NONE)
             {
                 game.push_back(Search::RootMoves[0].pv[1]);
                 pos.do_move(Search::RootMoves[0].pv[1], SetupStates->top());
@@ -622,21 +632,10 @@ void loop(const string& args) {
                         limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
                     }
                 limits.ponder=true;
-    			Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+        		Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
                 game.pop_back();
             }
             else ponderHitFEN="";
-            
-            //check for draw
-            if(pos.is_draw<false>()) { sleep(3); dgtnixPrintMessageOnClock("  draw", true, false); }
-            //check for mate or stalemate
-            MoveList<LEGAL> ml(pos); //the legal move list
-            if(!ml.size())
-            {
-                sleep(3);
-                if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
-                else dgtnixPrintMessageOnClock("stlmat", true, false);
-            }
 		}
 
 	}

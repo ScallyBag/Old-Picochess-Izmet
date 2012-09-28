@@ -405,7 +405,7 @@ void loop(const string& args) {
 	fixedTime = 5000; clockMode=FIXEDTIME; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
-    Time::point searchStartTime;
+    Time::point searchStartTime=Time::now();;
     string computerMoveFEN="";
 
 	// DGT Board Initialization
@@ -437,6 +437,7 @@ void loop(const string& args) {
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
+    UCI::loop("setoption name Emergency Base Time value 1300"); //keep 1 second on clock
     UCI::loop(string("setoption name Book File value ")+bookPath+"varied.bin"); //default book
     UCI::loop(string("setoption name OwnBook value true"));
 
@@ -572,14 +573,16 @@ void loop(const string& args) {
 		//Check for finished search
 		if (Search::Signals.stop == true && searching) {
 			searching = false;
+            
+            //update clock remaining time
+            if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
+            else bTime-=(Time::now()-searchStartTime);
+            
 			cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
 			printMoveOnClock(Search::RootMoves[0].pv[0]);
 			//do the moves in the game
 			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 			game.push_back(Search::RootMoves[0].pv[0]);      
-            //update clock remaining time
-            if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
-            else bTime-=(Time::now()-searchStartTime);
             
             finishSearch:
             //set the FEN we are waiting ofr on the board

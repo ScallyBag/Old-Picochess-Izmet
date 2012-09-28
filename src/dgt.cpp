@@ -533,7 +533,7 @@ void loop(const string& args) {
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 					game.push_back(bookMove);
-                    Search::RootMoves[0].pv[1]=MOVE_NONE; //No pondering
+                    if(!Search::RootMoves.empty()) Search::RootMoves[0].pv[1]=MOVE_NONE; //No pondering
                     goto finishSearch;
 				}
                 //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
@@ -609,7 +609,7 @@ void loop(const string& args) {
             computerMoveFENReached=false;
             
             //Ponder
-            if(Search::RootMoves[0].pv[1]!=MOVE_NONE)
+            if(!Search::RootMoves.empty() && Search::RootMoves[0].pv[1]!=MOVE_NONE)
             {
                 game.push_back(Search::RootMoves[0].pv[1]);
                 pos.do_move(Search::RootMoves[0].pv[1], SetupStates->top());

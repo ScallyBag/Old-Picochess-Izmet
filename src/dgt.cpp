@@ -407,7 +407,7 @@ void loop(const string& args) {
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime=Time::now();;
-    string computerMoveFEN="";
+    string computerMoveFEN="", ponderHitFEN="";
 
 	// DGT Board Initialization
 	int BoardDescriptor;
@@ -552,15 +552,22 @@ void loop(const string& args) {
 				else if(ml.size()) //Launch the search if there are legal moves
 				{
                     searchStartTime=Time::now();
-                    //set time limits
-                    if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos)
                     {
-                        limits.time[WHITE]=(max(wTime,0)*30)/100;
-                        limits.time[BLACK]=(max(bTime,0)*30)/100;
-                        limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
+                        UCI::loop("ponderhit");
                     }
-					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
-                    //dgtnixPrintMessageOnClock("search", false, false);
+                    else
+                    {
+                        //set time limits
+                        if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+                        {
+                            limits.time[WHITE]=(max(wTime,0)*30)/100;
+                            limits.time[BLACK]=(max(bTime,0)*30)/100;
+                            limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
+                        }
+                        limits.ponder=false;
+    					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+                    }
 					searching = true;
 				}
                 else //no move to play : we are mate or stalemate
@@ -599,6 +606,25 @@ void loop(const string& args) {
 				}
             computerMoveFEN=pos.to_fen();
             computerMoveFENReached=false;
+            
+            //Ponder
+            if(Search::RootMoves[0].pv[1]!=MOVE_NONE)
+            {
+                game.push_back(Search::RootMoves[0].pv[1]);
+                pos.do_move(Search::RootMoves[0].pv[1], SetupStates->top());
+                ponderHitFEN=pos.to_fen();          
+                //Launch ponder search
+                if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+                    {
+                        limits.time[WHITE]=(max(wTime,0)*30)/100;
+                        limits.time[BLACK]=(max(bTime,0)*30)/100;
+                        limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
+                    }
+                limits.ponder=true;
+    			Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+                game.pop_back();
+            }
+            else ponderHitFEN="";
             
             //check for draw
             if(pos.is_draw<false>()) { sleep(3); dgtnixPrintMessageOnClock("  draw", true, false); }

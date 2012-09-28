@@ -533,13 +533,14 @@ void loop(const string& args) {
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 					game.push_back(bookMove);
+                    Search::RootMoves[0].pv[1]=MOVE_NONE; //No pondering
                     goto finishSearch;
 				}
                 //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
                 //It does not detect stalemates
                 else if(pos.is_draw<false>())
                     dgtnixPrintMessageOnClock("  draw", true, false);
-                //Check if there is a single legal move
+                /*//Check if there is a single legal move
                 else if(ml.size()==1)
                 {
                     //sleep(1); //don't play immediately, wait for 1 second
@@ -548,7 +549,7 @@ void loop(const string& args) {
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 					game.push_back(ml.move());
                     goto finishSearch;
-                }
+                }*/
 				else if(ml.size()) //Launch the search if there are legal moves
 				{
                     searchStartTime=Time::now();

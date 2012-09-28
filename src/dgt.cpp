@@ -260,7 +260,8 @@ void configure(string fen)
 	}
 
 	//shutdown
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1")
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1"
+       || fen=="8/8/8/8/8/8/8/3QQ3 w KQkq - 0 1")
 	{
 		UCI::loop("stop"); //stop the current search
         if(!system("shutdown -h now"))

@@ -421,29 +421,67 @@ Move PolyglotBook::probe(const Position& pos, const string& fName, bool pickBest
           move = Move(e.move);
   }
 
-  if (!move)
+
+    return PolyglotBook::parse_move(pos, move);
+
+}
+
+std::vector<Move> PolyglotBook::probe_moves(const Position& pos, const string& fName, int num_moves) {
+  std::vector<Move> candidate_moves;
+
+  if (fileName != fName && !open(fName.c_str()))
+      return candidate_moves;
+
+  BookEntry e;
+  uint16_t best = 0;
+  unsigned sum = 0;
+  Move move = MOVE_NONE;
+  uint64_t key = book_key(pos);
+
+  seekg(find_first(key) * sizeof(BookEntry), ios_base::beg);
+
+  int move_count = 0;
+  while (*this >> e, e.key == key && good())
+  {
+    ++move_count;
+    candidate_moves.push_back(Move(e.move));
+    if (move_count >=num_moves) {
+        break;
+    }
+  }
+
+
+  return candidate_moves;
+
+}
+
+
+
+Move PolyglotBook::parse_move(const Position& pos, Move& move){
+    if (!move)
+          return MOVE_NONE;
+
+      // A PolyGlot book move is encoded as follows:
+      //
+      // bit  0- 5: destination square (from 0 to 63)
+      // bit  6-11: origin square (from 0 to 63)
+      // bit 12-14: promotion piece (from KNIGHT == 1 to QUEEN == 4)
+      //
+      // Castling moves follow "king captures rook" representation. So in case book
+      // move is a promotion we have to convert to our representation, in all the
+      // other cases we can directly compare with a Move after having masked out
+      // the special Move's flags (bit 14-15) that are not supported by PolyGlot.
+      int pt = (move >> 12) & 7;
+      if (pt)
+          move = make<PROMOTION>(from_sq(move), to_sq(move), PieceType(pt + 1));
+
+      // Add 'special move' flags and verify it is legal
+      for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)
+          if (move == (ml.move() ^ type_of(ml.move())))
+              return ml.move();
+
       return MOVE_NONE;
 
-  // A PolyGlot book move is encoded as follows:
-  //
-  // bit  0- 5: destination square (from 0 to 63)
-  // bit  6-11: origin square (from 0 to 63)
-  // bit 12-14: promotion piece (from KNIGHT == 1 to QUEEN == 4)
-  //
-  // Castling moves follow "king captures rook" representation. So in case book
-  // move is a promotion we have to convert to our representation, in all the
-  // other cases we can directly compare with a Move after having masked out
-  // the special Move's flags (bit 14-15) that are not supported by PolyGlot.
-  int pt = (move >> 12) & 7;
-  if (pt)
-      move = make<PROMOTION>(from_sq(move), to_sq(move), PieceType(pt + 1));
-
-  // Add 'special move' flags and verify it is legal
-  for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)
-      if (move == (ml.move() ^ type_of(ml.move())))
-          return ml.move();
-
-  return MOVE_NONE;
 }
 
 

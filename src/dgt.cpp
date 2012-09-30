@@ -50,7 +50,11 @@ Color computerPlays;
 vector<Move> game;
 bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
-const char* bookPath="/home/miniand/git/Stockfish/books/";
+//const char* bookPath="/home/miniand/git/Stockfish/books/";
+const char* bookPath="/Users/shiv/chess/Stockfish/books/";
+
+enum PlayMode {GAME, BOOK, ANALYSIS} playMode;
+
 enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL} clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
 bool computerMoveFENReached=false, searching = false;
@@ -206,7 +210,14 @@ void configure(string fen)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f 51  ", true, false); blitzTime=300000; fischerInc=1000; clockMode=BLITZFISCHER; resetClock(); }
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f155  ", true, false); blitzTime=900000; fischerInc=5000; clockMode=BLITZFISCHER; resetClock(); }
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f2010 ", true, false); blitzTime=1200000; fischerInc=10000; clockMode=BLITZFISCHER; resetClock(); }
-    
+
+    // White queen on a5
+    if (fen =="rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  book", true, false); playMode=BOOK; resetClock();}
+    // White queen on b5
+    if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock(" analyz", true, false); playMode=ANALYSIS; resetClock();}
+    // White queen on c5
+    if (fen =="rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  game", true, false); playMode=GAME; resetClock();}
+
 
     //choose opening book
     typedef map<string, string> BookMap; 
@@ -375,7 +386,7 @@ void printTimeOnClock(int wClockTime,int bClockTime, bool wDots=true, bool bDots
 }
 
 /// Prints a move on the dgt clock
-void printMoveOnClock(Move move)
+void printMoveOnClock(Move move, unsigned char beep = true)
 {
 	//print the move on the clock
 	string dgtMove = move_to_uci(move, false);
@@ -383,7 +394,7 @@ void printMoveOnClock(Move move)
 	if (dgtMove.length() < 6)
 		dgtMove.append(" ");
 	cout << '[' << dgtMove << ']' << endl;
-	dgtnixPrintMessageOnClock(dgtMove.c_str(), true, false);
+	dgtnixPrintMessageOnClock(dgtMove.c_str(), beep, false);
 }
 
 void* wakeUpEverySecond(void*)
@@ -527,10 +538,28 @@ void loop(const string& args) {
 				if(bookMove && Options["OwnBook"] && !limits.infinite)
 				{
 					dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
-					printMoveOnClock(bookMove);
-					//do the moves in the game
+                    //do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
-					game.push_back(bookMove);
+                    if (playMode!=GAME)
+                    {
+                        // Display top 5 moves
+                        vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], 3);
+
+                        for (vector<Move>::iterator it = book_moves.begin(); it!=book_moves.end(); ++it)
+                        {
+                        // Dont beep when showing book moves, can be annoying
+
+                         printMoveOnClock(*it, false);
+                         sleep(1);
+                        }
+                    }
+                    else
+                    {
+                        printMoveOnClock(bookMove);
+					    game.push_back(bookMove);
+                     }
+
+
                     goto finishSearch;
 				}
                 //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.

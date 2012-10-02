@@ -553,7 +553,7 @@ void loop(const string& args) {
 				else if(ml.size()) //Launch the search if there are legal moves
 				{
                     searchStartTime=Time::now();
-                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos)
+                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos && Search::Signals.stop == false)
                     {
                         UCI::loop("ponderhit");
                     }

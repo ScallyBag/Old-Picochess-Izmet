@@ -33,6 +33,7 @@
 
 using namespace std;
 
+
 namespace {
 
   // A Polyglot book is a series of "entries" of 16 bytes. All integers are
@@ -44,6 +45,12 @@ namespace {
     uint16_t count;
     uint32_t learn;
   };
+
+//    struct move_frequency {
+//      bool operator()(BookEntry const& e1, BookEntry const& e2) const {
+//          return e1.count >= e2.count;
+//      }
+//  };
 
   // Random numbers from PolyGlot, used to compute book hash keys
   const Key PolyGlotRandoms[781] = {
@@ -348,6 +355,8 @@ namespace {
 
 } // namespace
 
+
+
 PolyglotBook::PolyglotBook() {
 
   for (int i = Time::now() % 10000; i > 0; i--)
@@ -426,16 +435,21 @@ Move PolyglotBook::probe(const Position& pos, const string& fName, bool pickBest
 
 }
 
+bool sort_by_move_count(const BookEntry & be1, const BookEntry & be2)
+{
+    return be1.count > be2.count;
+}
+
 std::vector<Move> PolyglotBook::probe_moves(const Position& pos, const string& fName, int num_moves) {
+
+  std::vector<BookEntry> book_entries;
   std::vector<Move> candidate_moves;
 
   if (fileName != fName && !open(fName.c_str()))
       return candidate_moves;
 
   BookEntry e;
-  uint16_t best = 0;
-  unsigned sum = 0;
-  Move move = MOVE_NONE;
+
   uint64_t key = book_key(pos);
 
   seekg(find_first(key) * sizeof(BookEntry), ios_base::beg);
@@ -444,13 +458,24 @@ std::vector<Move> PolyglotBook::probe_moves(const Position& pos, const string& f
   while (*this >> e, e.key == key && good())
   {
     ++move_count;
-    candidate_moves.push_back(Move(e.move));
+    book_entries.push_back(e);
     if (move_count >=num_moves) {
         break;
     }
   }
 
+  // Sort candidate moves by quality if the vector of candidate moves is NOT empty.
+  if (!book_entries.empty())
+  {
+    sort(book_entries.begin(), book_entries.end(), &sort_by_move_count);
+    for (vector<BookEntry>::iterator it = book_entries.begin(); it!=book_entries.end(); ++it)
+    {
+     BookEntry be = *it;
+     Move mv = Move(be.move);
+     candidate_moves.push_back(PolyglotBook::parse_move(pos, mv));
+    }
 
+  }
   return candidate_moves;
 
 }

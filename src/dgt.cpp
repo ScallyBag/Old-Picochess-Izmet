@@ -54,6 +54,7 @@ const char* bookPath="/home/miniand/git/Stockfish/books/";
 enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL} clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
 bool computerMoveFENReached=false, searching = false;
+string ponderHitFEN="";
 
 
 void resetClock()
@@ -409,7 +410,7 @@ void loop(const string& args) {
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime=Time::now();;
-    string computerMoveFEN="", ponderHitFEN="";
+    string computerMoveFEN="";
 
 	// DGT Board Initialization
 	int BoardDescriptor;

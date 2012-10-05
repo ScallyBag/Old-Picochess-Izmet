@@ -248,6 +248,7 @@ void configure(string fen)
 	if(fen==StartFEN)
 	{
 		UCI::loop("stop"); //stop the current search
+        ponderHitFEN=="";
         computerMoveFENReached=false;
         searching=false;
 		game.clear(); //reset the game
@@ -300,6 +301,7 @@ Move isPlayable(const string& _fen)
 		if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
 		{
 			UCI::loop("stop"); //stop the current search
+            ponderHitFEN="";
 			cout << "Rolling back to position" << pos.to_fen() << endl;
 			dgtnixPrintMessageOnClock(" undo ", true, false);
 			game.erase((rit+1).base(),game.end()); //delete the moves from the game

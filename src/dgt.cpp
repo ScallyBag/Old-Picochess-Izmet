@@ -50,8 +50,7 @@ Color computerPlays;
 vector<Move> game;
 bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
-//const char* bookPath="/home/miniand/git/Stockfish/books/";
-const char* bookPath="/Users/shiv/chess/Stockfish/books/";
+const char* bookPath="/home/miniand/git/Stockfish/books/";
 
 enum PlayMode {GAME, BOOK, ANALYSIS, TRAINING} playMode;
 
@@ -210,16 +209,14 @@ void configure(string fen)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f 51  ", true, false); blitzTime=300000; fischerInc=1000; clockMode=BLITZFISCHER; resetClock(); }
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f155  ", true, false); blitzTime=900000; fischerInc=5000; clockMode=BLITZFISCHER; resetClock(); }
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f2010 ", true, false); blitzTime=1200000; fischerInc=10000; clockMode=BLITZFISCHER; resetClock(); }
-
+    
 
     // White queen on a5
     if (fen =="rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  book", true, false); playMode=BOOK; resetClock();}
     // White queen on b5
     if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("analyz", true, false); playMode=ANALYSIS; resetClock();}
-
     // White queen on c5
     if (fen =="rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock(" train", true, false); playMode=TRAINING; resetClock();}
-
     // White queen on d5
     if (fen =="rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  game", true, false); playMode=GAME; resetClock();}
 
@@ -276,7 +273,8 @@ void configure(string fen)
 	}
 
 	//shutdown
-	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1")
+	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQQBNR w KQkq - 0 1"
+       || fen=="8/8/8/8/8/8/8/3QQ3 w KQkq - 0 1")
 	{
 		UCI::loop("stop"); //stop the current search
         if(!system("shutdown -h now"))
@@ -415,21 +413,20 @@ void* wakeUpEverySecond(void*)
 bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or false every second
 
 void loop(const string& args) {
-	// Initialization
-	Position pos(StartFEN, false, Threads.main_thread()); // The root position
+    // Initialization
+    Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
 	fixedTime = 5000; clockMode=FIXEDTIME; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
-    Time::point searchStartTime;
-    string computerMoveFEN="";
+    Time::point searchStartTime=Time::now();;
+    string computerMoveFEN="", ponderHitFEN="";
+    playMode = GAME;
 
 	// DGT Board Initialization
 	int BoardDescriptor;
 	char port[256];
-//	dgtnixSetOption(DGTNIX_DEBUG, DGTNIX_DEBUG_WITH_TIME); //all debug informations are printed
-	dgtnixSetOption(DGTNIX_DEBUG, DGTNIX_DEBUG_OFF); //all debug informations are printed
-
+	dgtnixSetOption(DGTNIX_DEBUG, DGTNIX_DEBUG_WITH_TIME); //all debug informations are printed
 	strncpy(port, args.c_str(), 256);
 	BoardDescriptor = dgtnixInit(port);
 	int err = dgtnix_errno;
@@ -451,10 +448,11 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic007", true, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock("pic009", true, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
+    UCI::loop("setoption name Emergency Base Time value 1300"); //keep 1 second on clock
     UCI::loop(string("setoption name Book File value ")+bookPath+"varied.bin"); //default book
     UCI::loop(string("setoption name OwnBook value true"));
 
@@ -542,35 +540,36 @@ void loop(const string& args) {
       
 				//Check if we can find a move in the book
 				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
-		if (bookMove && Options["OwnBook"] && !limits.infinite) {
-                        dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
-                        //do the moves in the game
-                        if (playerMove != MOVE_NONE) {
-                            game.push_back(playerMove);
+				if(bookMove && Options["OwnBook"] && !limits.infinite)
+				{
+					dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
+                    //do the moves in the game
+					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+                    if (playMode!=GAME) {
+                        // Display top 2 moves
+                        vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], 2);
+
+                        for (vector<Move>::iterator it = book_moves.begin(); it != book_moves.end(); ++it) {
+                            // Dont beep when showing book moves, can be annoying
+
+                            printMoveOnClock(*it, false);
+//                            sleep(1);
                         }
-                        if (playMode == ANALYSIS || playMode == TRAINING || playMode == BOOK) {
-                            // Display top 3 moves
-                            vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], 3);
-
-                            for (vector<Move>::iterator it = book_moves.begin(); it != book_moves.end(); ++it) {
-                                // Dont beep when showing book moves, can be annoying
-
-                                printMoveOnClock(*it, false);
-                                sleep(1);
-                            }
-                        } else {
-                            printMoveOnClock(bookMove);
-                            game.push_back(bookMove);
-                        }
-
-
-                        goto finishSearch;
+                    } 
+                    else {
+                        printMoveOnClock(bookMove);
+                        game.push_back(bookMove);
+                       
                     }
+                    if(!Search::RootMoves.empty()) Search::RootMoves[0].pv[1]=MOVE_NONE; //No pondering
+                    goto finishSearch;
+                    
+                }
                 //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
                 //It does not detect stalemates
                 else if(pos.is_draw<false>())
                     dgtnixPrintMessageOnClock("  draw", true, false);
-                //Check if there is a single legal move
+                /*//Check if there is a single legal move
                 else if(ml.size()==1)
                 {
                     //sleep(1); //don't play immediately, wait for 1 second
@@ -579,21 +578,28 @@ void loop(const string& args) {
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 					game.push_back(ml.move());
                     goto finishSearch;
-                }
-		
-                else if(ml.size()) { //Launch the search if there are legal moves 
+                }*/
+				else if(ml.size()) //Launch the search if there are legal moves
+				{
                     searchStartTime=Time::now();
-                    //set time limits
-                    if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos && Search::Signals.stop == false)
                     {
-                        limits.time[WHITE]=(max(wTime,0)*30)/100;
-                        limits.time[BLACK]=(max(bTime,0)*30)/100;
-                        limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
+                        UCI::loop("ponderhit");
                     }
-					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
-                    //dgtnixPrintMessageOnClock("search", false, false);
+                    else
+                    {
+                        //set time limits
+                        if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+                        {
+                            limits.time[WHITE]=(max(wTime,0)*30)/100;
+                            limits.time[BLACK]=(max(bTime,0)*30)/100;
+                            limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
+                        }
+                        limits.ponder=false;
+    					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+                    }
 					searching = true;
-		}
+				}
                 else //no move to play : we are mate or stalemate
                 {
                     if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
@@ -603,12 +609,15 @@ void loop(const string& args) {
 		}
 
 		//Check for finished search
-            if (Search::Signals.stop == true && searching) {
+		if (Search::Signals.stop == true && searching) {
 			searching = false;
-			cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
-
+            //update clock remaining time
+            if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
+            else bTime-=(Time::now()-searchStartTime);
+            
+            cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
 		    //do the moves in the game
-                    if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+            if(playerMove!=MOVE_NONE) game.push_back(playerMove);
             
             if (playMode==ANALYSIS || playMode==TRAINING)
             {
@@ -654,40 +663,49 @@ void loop(const string& args) {
 
             }
 
-            //update clock remaining time
-            if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
-            else bTime-=(Time::now()-searchStartTime);
-            
             finishSearch:
-            //set the FEN we are waiting for on the board
+            //set the FEN we are waiting ofr on the board
             pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
             // Keep track of position keys along the setup moves (from start position to the
     		// position just before to start searching). Needed by repetition draw detection.
-	    Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
+			Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
 			//Do all the game moves
-            for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
-            {
-                SetupStates->push(StateInfo());
-                pos.do_move(*it, SetupStates->top());
-            }
-
-//	    if (playMode==ANALYSIS || playMode==TRAINING) {
-//            
-//            }
-//            else {
+				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
+				{
+					SetupStates->push(StateInfo());
+					pos.do_move(*it, SetupStates->top());
+				}
             computerMoveFEN=pos.to_fen();
             computerMoveFENReached=false;
-//            }
+            
+            MoveList<LEGAL> ml(pos); //the legal move list
             //check for draw
             if(pos.is_draw<false>()) { sleep(3); dgtnixPrintMessageOnClock("  draw", true, false); }
             //check for mate or stalemate
-            MoveList<LEGAL> ml(pos); //the legal move list
-            if(!ml.size())
+            else if(!ml.size())
             {
                 sleep(3);
                 if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
                 else dgtnixPrintMessageOnClock("stlmat", true, false);
             }
+            //Ponder
+            else if(playMode==GAME && !Search::RootMoves.empty() && Search::RootMoves[0].pv[1]!=MOVE_NONE)
+            {
+                game.push_back(Search::RootMoves[0].pv[1]);
+                pos.do_move(Search::RootMoves[0].pv[1], SetupStates->top());
+                ponderHitFEN=pos.to_fen();          
+                //Launch ponder search
+                if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+                    {
+                        limits.time[WHITE]=(max(wTime,0)*30)/100;
+                        limits.time[BLACK]=(max(bTime,0)*30)/100;
+                        limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
+                    }
+                limits.ponder=true;
+        		Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
+                game.pop_back();
+            }
+            else ponderHitFEN="";
 		}
 
 	}

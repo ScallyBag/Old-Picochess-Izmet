@@ -33,7 +33,6 @@
 
 using namespace std;
 
-
 namespace {
 
   // A Polyglot book is a series of "entries" of 16 bytes. All integers are
@@ -45,12 +44,6 @@ namespace {
     uint16_t count;
     uint32_t learn;
   };
-
-//    struct move_frequency {
-//      bool operator()(BookEntry const& e1, BookEntry const& e2) const {
-//          return e1.count >= e2.count;
-//      }
-//  };
 
   // Random numbers from PolyGlot, used to compute book hash keys
   const Key PolyGlotRandoms[781] = {
@@ -355,8 +348,6 @@ namespace {
 
 } // namespace
 
-
-
 PolyglotBook::PolyglotBook() {
 
   for (int i = Time::now() % 10000; i > 0; i--)
@@ -483,30 +474,29 @@ std::vector<Move> PolyglotBook::probe_moves(const Position& pos, const string& f
 
 
 Move PolyglotBook::parse_move(const Position& pos, Move& move){
-    if (!move)
-          return MOVE_NONE;
-
-      // A PolyGlot book move is encoded as follows:
-      //
-      // bit  0- 5: destination square (from 0 to 63)
-      // bit  6-11: origin square (from 0 to 63)
-      // bit 12-14: promotion piece (from KNIGHT == 1 to QUEEN == 4)
-      //
-      // Castling moves follow "king captures rook" representation. So in case book
-      // move is a promotion we have to convert to our representation, in all the
-      // other cases we can directly compare with a Move after having masked out
-      // the special Move's flags (bit 14-15) that are not supported by PolyGlot.
-      int pt = (move >> 12) & 7;
-      if (pt)
-          move = make<PROMOTION>(from_sq(move), to_sq(move), PieceType(pt + 1));
-
-      // Add 'special move' flags and verify it is legal
-      for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)
-          if (move == (ml.move() ^ type_of(ml.move())))
-              return ml.move();
-
+  if (!move)
       return MOVE_NONE;
 
+  // A PolyGlot book move is encoded as follows:
+  //
+  // bit  0- 5: destination square (from 0 to 63)
+  // bit  6-11: origin square (from 0 to 63)
+  // bit 12-14: promotion piece (from KNIGHT == 1 to QUEEN == 4)
+  //
+  // Castling moves follow "king captures rook" representation. So in case book
+  // move is a promotion we have to convert to our representation, in all the
+  // other cases we can directly compare with a Move after having masked out
+  // the special Move's flags (bit 14-15) that are not supported by PolyGlot.
+  int pt = (move >> 12) & 7;
+  if (pt)
+      move = make<PROMOTION>(from_sq(move), to_sq(move), PieceType(pt + 1));
+
+  // Add 'special move' flags and verify it is legal
+  for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)
+      if (move == (ml.move() ^ type_of(ml.move())))
+          return ml.move();
+
+  return MOVE_NONE;
 }
 
 

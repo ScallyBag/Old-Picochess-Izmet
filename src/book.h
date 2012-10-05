@@ -22,6 +22,7 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "position.h"
 #include "rkiss.h"
@@ -31,6 +32,8 @@ public:
   PolyglotBook();
  ~PolyglotBook();
   Move probe(const Position& pos, const std::string& fName, bool pickBest);
+  std::vector<Move> probe_moves(const Position& pos, const std::string& fName, int num_moves=5);
+  Move parse_move(const Position& pos, Move& move);
 
 private:
   template<typename T> PolyglotBook& operator>>(T& n);

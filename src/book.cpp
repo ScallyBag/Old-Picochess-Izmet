@@ -421,6 +421,59 @@ Move PolyglotBook::probe(const Position& pos, const string& fName, bool pickBest
           move = Move(e.move);
   }
 
+
+    return PolyglotBook::parse_move(pos, move);
+
+}
+
+bool sort_by_move_count(const BookEntry & be1, const BookEntry & be2)
+{
+    return be1.count > be2.count;
+}
+
+std::vector<Move> PolyglotBook::probe_moves(const Position& pos, const string& fName, int num_moves) {
+
+  std::vector<BookEntry> book_entries;
+  std::vector<Move> candidate_moves;
+
+  if (fileName != fName && !open(fName.c_str()))
+      return candidate_moves;
+
+  BookEntry e;
+
+  uint64_t key = book_key(pos);
+
+  seekg(find_first(key) * sizeof(BookEntry), ios_base::beg);
+
+  int move_count = 0;
+  while (*this >> e, e.key == key && good())
+  {
+    ++move_count;
+    book_entries.push_back(e);
+    if (move_count >=num_moves) {
+        break;
+    }
+  }
+
+  // Sort candidate moves by quality if the vector of candidate moves is NOT empty.
+  if (!book_entries.empty())
+  {
+    sort(book_entries.begin(), book_entries.end(), &sort_by_move_count);
+    for (vector<BookEntry>::iterator it = book_entries.begin(); it!=book_entries.end(); ++it)
+    {
+     BookEntry be = *it;
+     Move mv = Move(be.move);
+     candidate_moves.push_back(PolyglotBook::parse_move(pos, mv));
+    }
+
+  }
+  return candidate_moves;
+
+}
+
+
+
+Move PolyglotBook::parse_move(const Position& pos, Move& move){
   if (!move)
       return MOVE_NONE;
 

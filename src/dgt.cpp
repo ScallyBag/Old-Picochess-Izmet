@@ -490,7 +490,7 @@ void loop(const string& args) {
 			cout<< "-------------------------Move:" << move <<  endl;
 			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
 			{
-				UCI::loop("stop"); //stop the current search
+				//if(searching) UCI::loop("stop"); //stop the current search
 				playerMove=move;
                 
                 //player has just moved : we need to update his remaining time
@@ -528,7 +528,9 @@ void loop(const string& args) {
 				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
 				if(bookMove && Options["OwnBook"] && !limits.infinite)
 				{
-					dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
+					UCI::loop("stop");
+                    searching=false;
+                    dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
 					printMoveOnClock(bookMove);
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
@@ -553,26 +555,31 @@ void loop(const string& args) {
 				else if(ml.size()) //Launch the search if there are legal moves
 				{
                     searchStartTime=Time::now();
-                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos && Search::Signals.stop == false)
+                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos /*&& Search::Signals.stop == false*/)
                     {
+                        cout<<"ponderhit!!"<<endl;
                         UCI::loop("ponderhit");
                     }
                     else
                     {
+                        UCI::loop("stop");
                         //set time limits
                         if(clockMode==BLITZ || clockMode==BLITZFISCHER)
                         {
-                            limits.time[WHITE]=(max(wTime,0)*30)/100;
-                            limits.time[BLACK]=(max(bTime,0)*30)/100;
+                            limits.time[WHITE]=max(wTime,0);
+                            limits.time[BLACK]=max(bTime,0);
                             limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
                         }
                         limits.ponder=false;
+                        ponderHitFEN="";
+                        cout<<"launch serach!!"<<endl;
     					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
                     }
 					searching = true;
 				}
                 else //no move to play : we are mate or stalemate
                 {
+                    cout<<"mate of stalemate!!"<<endl;
                     if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
                     else dgtnixPrintMessageOnClock("stlmat", true, false);
                 }
@@ -627,8 +634,8 @@ void loop(const string& args) {
                 //Launch ponder search
                 if(clockMode==BLITZ || clockMode==BLITZFISCHER)
                     {
-                        limits.time[WHITE]=(max(wTime,0)*30)/100;
-                        limits.time[BLACK]=(max(bTime,0)*30)/100;
+                        limits.time[WHITE]=max(wTime,0);
+                        limits.time[BLACK]=max(bTime,0);
                         limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
                     }
                 limits.ponder=true;

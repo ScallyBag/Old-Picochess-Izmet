@@ -460,11 +460,14 @@ void loop(const string& args) {
         string s = getDgtFEN();
         
         //Display time on clock
-        if(clockMode==FIXEDTIME && searching) //If we are in fixed time per move mode, display computer remaining time 
+        if(clockMode==FIXEDTIME && searching && limits.movetime >= 5000 ) //If we are in fixed time per move mode, display computer remaining time 
         {
             int remainingTime=limits.movetime-(Time::now()-searchStartTime);
-            if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, blink(), false);
-            else printTimeOnClock(-1, remainingTime, false, blink());
+            if(remainingTime >= 1000)
+            {
+                if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, blink(), false);
+                else printTimeOnClock(-1, remainingTime, false, blink());
+            } 
         }
         else if( (clockMode==BLITZ || clockMode==BLITZFISCHER) && (searching || (computerMoveFENReached && !isPlayable(s))))  //blitz mode and computer or player thinking
         {

@@ -246,7 +246,7 @@ void configure(string fen)
 	if(fen=="rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { cout << "You play black"<< endl; computerPlays=WHITE; }
 
 	//new game
-	if(fen==StartFEN)
+	if(fen==StartFEN && !game.empty())
 	{
 		UCI::loop("stop"); //stop the current search
         ponderHitFEN=="";

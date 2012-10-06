@@ -85,7 +85,7 @@ ifeq ($(ARCH),general-32)
 	bits = 32
 	prefetch = no
 	bsfq = no
-	popcnt = no
+	popcnt = yes
 endif
 
 # x86-section
@@ -314,7 +314,7 @@ endif
 
 ### 3.9 popcnt
 ifeq ($(popcnt),yes)
-	CXXFLAGS += -msse3 -DUSE_POPCNT
+	CXXFLAGS += -mfloat-abi=softfp -mfpu=neon -DUSE_POPCNT
 endif
 
 ### 3.10 Link Time Optimization, it works since gcc 4.5 but not on mingw.

@@ -78,6 +78,7 @@ inline int popcount<CNT_32_MAX15>(Bitboard b) {
   return ((v + w) * 0x11111111) >> 28;
 }
 
+#include "arm_neon.h"
 template<>
 inline int popcount<CNT_HW_POPCNT>(Bitboard b) {
 
@@ -93,6 +94,12 @@ inline int popcount<CNT_HW_POPCNT>(Bitboard b) {
 #elif defined(_MSC_VER)
 
   return (int)__popcnt64(b);
+  
+#elif defined(__GNUC__)
+
+  uint32_t sums[2];
+  vst1_u32(sums,vpaddl_u16(vpaddl_u8(vcnt_u8(vcreate_u8(b)))));
+  return sums[0]+sums[1];
 
 #else
 

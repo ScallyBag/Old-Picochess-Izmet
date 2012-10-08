@@ -553,8 +553,8 @@ void loop(const string& args) {
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
                     if (playMode!=GAME) {
-                        // Display top 2 moves
-                        vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], 2);
+                        // Display top 3 moves. 3 Moves without delay is not that bad
+                        vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], 3);
 
                         for (vector<Move>::iterator it = book_moves.begin(); it != book_moves.end(); ++it) {
                             // Dont beep when showing book moves, can be annoying

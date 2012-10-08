@@ -51,6 +51,9 @@ vector<Move> game;
 bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 const char* bookPath="/home/miniand/git/Stockfish/books/";
+
+enum PlayMode {GAME, BOOK, ANALYSIS, TRAINING} playMode;
+
 enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL} clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
 bool computerMoveFENReached=false, searching = false;
@@ -208,6 +211,16 @@ void configure(string fen)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f155  ", true, false); blitzTime=900000; fischerInc=5000; clockMode=BLITZFISCHER; resetClock(); }
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { dgtnixPrintMessageOnClock("f2010 ", true, false); blitzTime=1200000; fischerInc=10000; clockMode=BLITZFISCHER; resetClock(); }
     
+
+    // White queen on a5
+    if (fen =="rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  book", true, false); playMode=BOOK; resetClock();}
+    // White queen on b5
+    if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("analyz", true, false); playMode=ANALYSIS; resetClock();}
+    // White queen on c5
+    if (fen =="rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock(" train", true, false); playMode=TRAINING; resetClock();}
+    // White queen on d5
+    if (fen =="rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  game", true, false); playMode=GAME; resetClock();}
+
 
     //choose opening book
     typedef map<string, string> BookMap; 
@@ -379,7 +392,7 @@ void printTimeOnClock(int wClockTime,int bClockTime, bool wDots=true, bool bDots
 }
 
 /// Prints a move on the dgt clock
-void printMoveOnClock(Move move)
+void printMoveOnClock(Move move, unsigned char beep = true)
 {
 	//print the move on the clock
 	string dgtMove = move_to_uci(move, false);
@@ -387,7 +400,7 @@ void printMoveOnClock(Move move)
 	if (dgtMove.length() < 6)
 		dgtMove.append(" ");
 	cout << '[' << dgtMove << ']' << endl;
-	dgtnixPrintMessageOnClock(dgtMove.c_str(), true, false);
+	dgtnixPrintMessageOnClock(dgtMove.c_str(), beep, false);
 }
 
 void* wakeUpEverySecond(void*)
@@ -537,12 +550,28 @@ void loop(const string& args) {
 					UCI::loop("stop");
                     searching=false;
                     dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
-					printMoveOnClock(bookMove);
+
 					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+                    if (playMode!=GAME) {
+                        // Display top 3 moves. 3 Moves without delay is not that bad
+                        vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], 3);
+
+                        for (vector<Move>::iterator it = book_moves.begin(); it != book_moves.end(); ++it) {
+                            // Dont beep when showing book moves, can be annoying
+
+                            printMoveOnClock(*it, false);
+//                            sleep(1);
+                        }
+                    } 
+                    else {
+                        printMoveOnClock(bookMove);
 					game.push_back(bookMove);
+                       
+                    }
                     if(!Search::RootMoves.empty()) Search::RootMoves[0].pv[1]=MOVE_NONE; //No pondering
                     goto finishSearch;
+                    
 				}
                 //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
                 //It does not detect stalemates
@@ -601,11 +630,53 @@ void loop(const string& args) {
             else bTime-=(Time::now()-searchStartTime);
             
 			cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
-			printMoveOnClock(Search::RootMoves[0].pv[0]);
 			//do the moves in the game
 			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+            
+            if (playMode==ANALYSIS || playMode==TRAINING)
+            {
+                string uci_score = score_to_uci(Search::RootMoves[0].score);
+
+                //Display the best move computer suggestion only in analysis mode
+                if (playMode==ANALYSIS)
+                {
+                    printMoveOnClock(Search::RootMoves[0].pv[0],false);
+                    sleep(1);
+                }
+                
+                // Remove the words 'cp' from output to save clock space
+                if (uci_score[0] == 'c' && uci_score[1] == 'p') {
+
+                        uci_score.erase(0,2);
+                }
+                // TODO: Some trimming on the 'mate' message
+                if (uci_score[0] == 'm' && uci_score[1] == 'a' && uci_score[2] == 't' && uci_score[3] == 'e') {
+
+                        uci_score.erase(1,3);
+                }
+                
+                // The string manipulation algorithm can be optimized to doing one call for erase and appending blanks if needed.
+                // erase from end if more than 6 chars
+                while (uci_score.length()>6)
+                {
+                    uci_score.erase(uci_score.length()-1,1);
+                }
+
+                while (uci_score.length() < 6) {
+                    uci_score = " " + uci_score;
+                }
+
+                dgtnixPrintMessageOnClock(uci_score.c_str(), false, false);
+                    
+
+            }
+            else
+            {
+                printMoveOnClock(Search::RootMoves[0].pv[0]);
 			game.push_back(Search::RootMoves[0].pv[0]);      
             
+            }
+
             finishSearch:
             //set the FEN we are waiting ofr on the board
             pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
@@ -632,7 +703,7 @@ void loop(const string& args) {
                 else dgtnixPrintMessageOnClock("stlmat", true, false);
             }
             //Ponder
-            else if(!Search::RootMoves.empty() && Search::RootMoves[0].pv[1]!=MOVE_NONE)
+            else if(playMode==GAME && !Search::RootMoves.empty() && Search::RootMoves[0].pv[1]!=MOVE_NONE)
             {
                 game.push_back(Search::RootMoves[0].pv[1]);
                 pos.do_move(Search::RootMoves[0].pv[1], SetupStates->top());

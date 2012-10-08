@@ -832,10 +832,10 @@ split_point_start: // At split points actual search starts from here
       {
           Signals.firstRootMove = (moveCount == 1);
 
-          if (thisThread == Threads.main_thread() && Time::now() - SearchTime > 2000)
+          /*if (thisThread == Threads.main_thread() && Time::now() - SearchTime > 2000)
               sync_cout << "info depth " << depth / ONE_PLY
                         << " currmove " << move_to_uci(move, Chess960)
-                        << " currmovenumber " << moveCount + PVIdx << sync_endl;
+                        << " currmovenumber " << moveCount + PVIdx << sync_endl;*/
       }
 
       captureOrPromotion = pos.is_capture_or_promotion(move);

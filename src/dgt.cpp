@@ -57,6 +57,7 @@ enum PlayMode {GAME, BOOK, ANALYSIS, TRAINING} playMode;
 enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL} clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
 bool computerMoveFENReached=false, searching = false;
+string ponderHitFEN="";
 
 
 void resetClock()
@@ -258,9 +259,10 @@ void configure(string fen)
 	if(fen=="rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { cout << "You play black"<< endl; computerPlays=WHITE; }
 
 	//new game
-	if(fen==StartFEN)
+	if(fen==StartFEN && !game.empty())
 	{
 		UCI::loop("stop"); //stop the current search
+        ponderHitFEN=="";
         computerMoveFENReached=false;
         searching=false;
 		game.clear(); //reset the game
@@ -313,6 +315,7 @@ Move isPlayable(const string& _fen)
 		if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
 		{
 			UCI::loop("stop"); //stop the current search
+            ponderHitFEN="";
 			cout << "Rolling back to position" << pos.to_fen() << endl;
 			dgtnixPrintMessageOnClock(" undo ", true, false);
 			game.erase((rit+1).base(),game.end()); //delete the moves from the game
@@ -413,15 +416,14 @@ void* wakeUpEverySecond(void*)
 bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or false every second
 
 void loop(const string& args) {
-    // Initialization
-    Position pos(StartFEN, false, Threads.main_thread()); // The root position
+	// Initialization
+	Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
 	fixedTime = 5000; clockMode=FIXEDTIME; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime=Time::now();;
-    string computerMoveFEN="", ponderHitFEN="";
-    playMode = GAME;
+    string computerMoveFEN="";
 
 	// DGT Board Initialization
 	int BoardDescriptor;
@@ -448,7 +450,7 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic009", true, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock("pic012", true, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
@@ -471,11 +473,14 @@ void loop(const string& args) {
         string s = getDgtFEN();
         
         //Display time on clock
-        if(clockMode==FIXEDTIME && searching) //If we are in fixed time per move mode, display computer remaining time 
+        if(clockMode==FIXEDTIME && searching && limits.movetime >= 5000 ) //If we are in fixed time per move mode, display computer remaining time 
         {
             int remainingTime=limits.movetime-(Time::now()-searchStartTime);
-            if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, blink(), false);
-            else printTimeOnClock(-1, remainingTime, false, blink());
+            if(remainingTime >= 1000)
+            {
+                if(computerPlays==WHITE) printTimeOnClock(remainingTime, -1, blink(), false);
+                else printTimeOnClock(-1, remainingTime, false, blink());
+            } 
         }
         else if( (clockMode==BLITZ || clockMode==BLITZFISCHER) && (searching || (computerMoveFENReached && !isPlayable(s))))  //blitz mode and computer or player thinking
         {
@@ -504,7 +509,7 @@ void loop(const string& args) {
 			cout<< "-------------------------Move:" << move <<  endl;
 			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
 			{
-				UCI::loop("stop"); //stop the current search
+				//if(searching) UCI::loop("stop"); //stop the current search
 				playerMove=move;
                 
                 //player has just moved : we need to update his remaining time
@@ -542,8 +547,10 @@ void loop(const string& args) {
 				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
 				if(bookMove && Options["OwnBook"] && !limits.infinite)
 				{
-					dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
-                    //do the moves in the game
+					UCI::loop("stop");
+                    searching=false;
+                    dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
+					//do the moves in the game
 					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
                     if (playMode!=GAME) {
                         // Display top 2 moves
@@ -558,13 +565,13 @@ void loop(const string& args) {
                     } 
                     else {
                         printMoveOnClock(bookMove);
-                        game.push_back(bookMove);
+					game.push_back(bookMove);
                        
                     }
                     if(!Search::RootMoves.empty()) Search::RootMoves[0].pv[1]=MOVE_NONE; //No pondering
                     goto finishSearch;
                     
-                }
+				}
                 //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
                 //It does not detect stalemates
                 else if(pos.is_draw<false>())
@@ -582,26 +589,31 @@ void loop(const string& args) {
 				else if(ml.size()) //Launch the search if there are legal moves
 				{
                     searchStartTime=Time::now();
-                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos && Search::Signals.stop == false)
+                    if(ponderHitFEN.find(currentFEN.substr(0, currentFEN.find(' ')))!= string::npos /*&& Search::Signals.stop == false*/)
                     {
+                        cout<<"ponderhit!!"<<endl;
                         UCI::loop("ponderhit");
                     }
                     else
                     {
+                        UCI::loop("stop");
                         //set time limits
                         if(clockMode==BLITZ || clockMode==BLITZFISCHER)
                         {
-                            limits.time[WHITE]=(max(wTime,0)*30)/100;
-                            limits.time[BLACK]=(max(bTime,0)*30)/100;
+                            limits.time[WHITE]=max(wTime,0);
+                            limits.time[BLACK]=max(bTime,0);
                             limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
                         }
                         limits.ponder=false;
+                        ponderHitFEN="";
+                        cout<<"launch serach!!"<<endl;
     					Threads.start_searching(pos, limits, vector<Move>(),SetupStates);
                     }
 					searching = true;
 				}
                 else //no move to play : we are mate or stalemate
                 {
+                    cout<<"mate of stalemate!!"<<endl;
                     if(pos.in_check()) dgtnixPrintMessageOnClock("  mate", true, false);
                     else dgtnixPrintMessageOnClock("stlmat", true, false);
                 }
@@ -611,13 +623,14 @@ void loop(const string& args) {
 		//Check for finished search
 		if (Search::Signals.stop == true && searching) {
 			searching = false;
+            
             //update clock remaining time
             if(computerPlays==WHITE) wTime-=(Time::now()-searchStartTime);
             else bTime-=(Time::now()-searchStartTime);
             
-            cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
-		    //do the moves in the game
-            if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+			cout << "stopped with move " << move_to_uci(Search::RootMoves[0].pv[0], false) << endl;
+			//do the moves in the game
+			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
             
             if (playMode==ANALYSIS || playMode==TRAINING)
             {
@@ -659,8 +672,8 @@ void loop(const string& args) {
             else
             {
                 printMoveOnClock(Search::RootMoves[0].pv[0]);
-                game.push_back(Search::RootMoves[0].pv[0]);
-
+			game.push_back(Search::RootMoves[0].pv[0]);      
+            
             }
 
             finishSearch:
@@ -697,8 +710,8 @@ void loop(const string& args) {
                 //Launch ponder search
                 if(clockMode==BLITZ || clockMode==BLITZFISCHER)
                     {
-                        limits.time[WHITE]=(max(wTime,0)*30)/100;
-                        limits.time[BLACK]=(max(bTime,0)*30)/100;
+                        limits.time[WHITE]=max(wTime,0);
+                        limits.time[BLACK]=max(bTime,0);
                         limits.inc[WHITE]=limits.inc[BLACK]=fischerInc;
                     }
                 limits.ponder=true;

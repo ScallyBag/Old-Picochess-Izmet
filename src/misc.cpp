@@ -241,6 +241,10 @@ void prefetch(char* addr) {
 #  else
   __builtin_prefetch(addr);
   __builtin_prefetch(addr+64);
+  #  if defined(__arm__) // 32 bytes cache line
+  __builtin_prefetch(addr+32);
+  __builtin_prefetch(addr+96);
+  #endif
 #  endif
 }
 

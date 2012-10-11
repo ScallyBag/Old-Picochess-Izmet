@@ -125,6 +125,16 @@ ifeq ($(ARCH),x86-32-old)
 	popcnt = no
 endif
 
+#arm section
+ifeq ($(ARCH),armv7)
+	arch = armv7
+	os = any
+	bits = 32
+	prefetch = yes
+	bsfq = yes
+	popcnt = no
+endif
+
 # osx-section
 ifeq ($(ARCH),osx-ppc-64)
 	arch = ppc64
@@ -228,7 +238,7 @@ ifeq ($(comp),clang)
 endif
 
 ifeq ($(os),osx)
-	CXXFLAGS += -arch $(arch)
+	CXXFLAGS += -arch $(arch) -mmacosx-version-min=10.6
 endif
 
 ### 3.3 General linker settings
@@ -243,7 +253,7 @@ ifneq ($(comp),mingw)
 endif
 
 ifeq ($(os),osx)
-	LDFLAGS += -arch $(arch)
+	LDFLAGS += -arch $(arch) -mmacosx-version-min=10.6
 endif
 
 ### 3.4 Debugging
@@ -264,6 +274,10 @@ ifeq ($(optimize),yes)
 			ifeq ($(arch),x86_64)
 				CXXFLAGS += -mdynamic-no-pic
 			endif
+		endif
+
+		ifeq ($(arch),armv7)
+			CXXFLAGS += -fno-gcse
 		endif
 	endif
 
@@ -301,8 +315,10 @@ endif
 
 ### 3.7 prefetch
 ifeq ($(prefetch),yes)
-	CXXFLAGS += -msse
-	DEPENDFLAGS += -msse
+	ifneq ($(arch),armv7)
+		CXXFLAGS += -msse
+		DEPENDFLAGS += -msse
+	endif
 else
 	CXXFLAGS += -DNO_PREFETCH
 endif
@@ -360,6 +376,7 @@ help:
 	@echo "osx-ppc-32           > PPC-Mac OS X 32 bit"
 	@echo "osx-x86-64           > x86-Mac OS X 64 bit"
 	@echo "osx-x86-32           > x86-Mac OS X 32 bit"
+	@echo "armv7                > ARMv7 32 bit"
 	@echo "general-64           > unspecified 64-bit"
 	@echo "general-32           > unspecified 32-bit"
 	@echo ""
@@ -449,7 +466,7 @@ config-sanity:
 	@test "$(debug)" = "yes" || test "$(debug)" = "no"
 	@test "$(optimize)" = "yes" || test "$(optimize)" = "no"
 	@test "$(arch)" = "any" || test "$(arch)" = "x86_64" || test "$(arch)" = "i386" || \
-	 test "$(arch)" = "ppc64" || test "$(arch)" = "ppc"
+	 test "$(arch)" = "ppc64" || test "$(arch)" = "ppc" || test "$(arch)" = "armv7"
 	@test "$(os)" = "any" || test "$(os)" = "osx"
 	@test "$(bits)" = "32" || test "$(bits)" = "64"
 	@test "$(prefetch)" = "yes" || test "$(prefetch)" = "no"

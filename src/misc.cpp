@@ -239,11 +239,14 @@ void prefetch(char* addr) {
   _mm_prefetch(addr, _MM_HINT_T0);
   _mm_prefetch(addr+64, _MM_HINT_T0); // 64 bytes ahead
 #  else
-  __builtin_prefetch(addr);
-  __builtin_prefetch(addr+64);
-  #  if defined(__arm__) // 32 bytes cache line
-  __builtin_prefetch(addr+32);
-  __builtin_prefetch(addr+96);
+  #  if defined(__arm__) 
+    __asm__("pld [%0]"::"r" (addr));
+    __asm__("pld [%0, #32]"::"r" (addr));
+    __asm__("pld [%0, #64]"::"r" (addr));
+    __asm__("pld [%0, #96]"::"r" (addr));
+  #else
+    __builtin_prefetch(addr);
+    __builtin_prefetch(addr+64);
   #endif
 #  endif
 }

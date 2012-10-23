@@ -546,7 +546,7 @@ void loop(const string& args) {
 				}
                 //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
                 //It does not detect stalemates
-                else if(pos.is_draw<false>())
+                else if(pos.is_draw<false,false>())
                     dgtnixPrintMessageOnClock("  draw", true, false);
                 /*//Check if there is a single legal move
                 else if(ml.size()==1)
@@ -623,7 +623,7 @@ void loop(const string& args) {
             
             MoveList<LEGAL> ml(pos); //the legal move list
             //check for draw
-            if(pos.is_draw<false>()) { sleep(3); dgtnixPrintMessageOnClock("  draw", true, false); }
+            if(pos.is_draw<false,false>()) { sleep(3); dgtnixPrintMessageOnClock("  draw", true, false); }
             //check for mate or stalemate
             else if(!ml.size())
             {

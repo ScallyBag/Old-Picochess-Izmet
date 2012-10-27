@@ -1488,22 +1488,9 @@ bool Position::is_draw() const {
           for (int cnt = 0; i <= e; i += 2)
           {
               stp = stp->previous->previous;
-
-<<<<<<< HEAD
-              if (stp->key == st->key)
-              {
-                if(SkipThreeFoldCheck) return true;
-                else if(++rep_count>=2) return true;
-              }
-
-              i +=2;
-
-          } while (i <= e);
-=======
               if (stp->key == st->key && (!CheckThreeFold || ++cnt >= 2))
                   return true;
           }
->>>>>>> upstream/master
       }
   }
 

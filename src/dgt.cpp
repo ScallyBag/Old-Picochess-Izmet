@@ -296,9 +296,11 @@ Move isPlayable(const string& _fen)
 
 	//Next we check from the end of the game to the beginning if we reached a position already played
 	//If this is the case, we takeback the moves and return MOVE_NONE
-	for (vector<Move>::reverse_iterator rit=game.rbegin() ; rit < game.rend(); ++rit )
+    bool continueSearch=true;
+	for (vector<Move>::reverse_iterator rit=game.rbegin() ; rit < game.rend() && continueSearch ; ++rit )
 	{
 		pos.undo_move(*rit);
+        if(pos.side_to_move()!=computerPlays) continueSearch=false; //stop searching in the game when we reached a position where human has the move
 		if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
 		{
 			UCI::loop("stop"); //stop the current search

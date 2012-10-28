@@ -40,16 +40,16 @@ static const string PieceToChar(" PNBRQK  pnbrqk");
 
 CACHE_LINE_ALIGNMENT
 
-Score pieceSquareTable[16][64]; // [piece][square]
-Value PieceValue[2][18] = {     // [Mg / Eg][piece / pieceType]
+Score pieceSquareTable[PIECE_NB][SQUARE_NB];
+Value PieceValue[PHASE_NB][PIECE_NB] = {
 { VALUE_ZERO, PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg },
 { VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg } };
 
 namespace Zobrist {
 
-Key psq[2][8][64]; // [color][pieceType][square / piece count]
-Key enpassant[8];  // [file]
-Key castle[16];    // [castleRight]
+Key psq[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
+Key enpassant[FILE_NB];
+Key castle[CASTLE_RIGHT_NB];
 Key side;
 Key exclusion;
 
@@ -86,10 +86,10 @@ void init() {
 
   for (PieceType pt = PAWN; pt <= KING; pt++)
   {
-      PieceValue[Mg][make_piece(BLACK, pt)] = PieceValue[Mg][pt];
-      PieceValue[Eg][make_piece(BLACK, pt)] = PieceValue[Eg][pt];
+      PieceValue[MG][make_piece(BLACK, pt)] = PieceValue[MG][pt];
+      PieceValue[EG][make_piece(BLACK, pt)] = PieceValue[EG][pt];
 
-      Score v = make_score(PieceValue[Mg][pt], PieceValue[Eg][pt]);
+      Score v = make_score(PieceValue[MG][pt], PieceValue[EG][pt]);
 
       for (Square s = SQ_A1; s <= SQ_H8; s++)
       {
@@ -100,6 +100,40 @@ void init() {
 }
 
 } // namespace Zobrist
+
+
+namespace {
+
+/// next_attacker() is an helper function used by see() to locate the least
+/// valuable attacker for the side to move, remove the attacker we just found
+/// from the 'occupied' bitboard and scan for new X-ray attacks behind it.
+
+template<int Pt> FORCE_INLINE
+PieceType next_attacker(const Bitboard* bb, const Square& to, const Bitboard& stmAttackers,
+                        Bitboard& occupied, Bitboard& attackers) {
+
+  if (stmAttackers & bb[Pt])
+  {
+      Bitboard b = stmAttackers & bb[Pt];
+      occupied ^= b & ~(b - 1);
+
+      if (Pt == PAWN || Pt == BISHOP || Pt == QUEEN)
+          attackers |= attacks_bb<BISHOP>(to, occupied) & (bb[BISHOP] | bb[QUEEN]);
+
+      if (Pt == ROOK || Pt == QUEEN)
+          attackers |= attacks_bb<ROOK>(to, occupied) & (bb[ROOK] | bb[QUEEN]);
+
+      return (PieceType)Pt;
+  }
+  return next_attacker<Pt+1>(bb, to, stmAttackers, occupied, attackers);
+}
+
+template<> FORCE_INLINE
+PieceType next_attacker<KING>(const Bitboard*, const Square&, const Bitboard&, Bitboard&, Bitboard&) {
+  return KING; // No need to update bitboards, it is the last cycle
+}
+
+} // namespace
 
 
 /// CheckInfo c'tor
@@ -363,17 +397,17 @@ void Position::print(Move move) const {
 
   string brd = twoRows + twoRows + twoRows + twoRows + dottedLine;
 
+  sync_cout;
+
   if (move)
-  {
-      Position p(*this);
-      cout << "\nMove is: " << (sideToMove == BLACK ? ".." : "") << move_to_san(p, move);
-  }
+      cout << "\nMove is: " << (sideToMove == BLACK ? ".." : "")
+           << move_to_san(*const_cast<Position*>(this), move);
 
   for (Square sq = SQ_A1; sq <= SQ_H8; sq++)
       if (piece_on(sq) != NO_PIECE)
           brd[513 - 68*rank_of(sq) + 4*file_of(sq)] = PieceToChar[piece_on(sq)];
 
-  cout << brd << "\nFen is: " << to_fen() << "\nKey is: " << st->key << endl;
+  cout << brd << "\nFen is: " << to_fen() << "\nKey is: " << st->key << sync_endl;
 }
 
 
@@ -794,7 +828,7 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
           st->pawnKey ^= Zobrist::psq[them][PAWN][capsq];
       }
       else
-          st->npMaterial[them] -= PieceValue[Mg][capture];
+          st->npMaterial[them] -= PieceValue[MG][capture];
 
       // Remove the captured piece
       byTypeBB[ALL_PIECES] ^= capsq;
@@ -902,7 +936,7 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
                          - pieceSquareTable[make_piece(us, PAWN)][to];
 
           // Update material
-          st->npMaterial[us] += PieceValue[Mg][promotion];
+          st->npMaterial[us] += PieceValue[MG][promotion];
       }
 
       // Update pawn hash key
@@ -1207,7 +1241,7 @@ int Position::see_sign(Move m) const {
   // Early return if SEE cannot be negative because captured piece value
   // is not less then capturing one. Note that king moves always return
   // here because king midgame value is set to 0.
-  if (PieceValue[Mg][piece_on(to_sq(m))] >= PieceValue[Mg][piece_moved(m)])
+  if (PieceValue[MG][piece_on(to_sq(m))] >= PieceValue[MG][piece_moved(m)])
       return 1;
 
   return see(m);
@@ -1216,47 +1250,45 @@ int Position::see_sign(Move m) const {
 int Position::see(Move m) const {
 
   Square from, to;
-  Bitboard occ, attackers, stmAttackers, b;
+  Bitboard occupied, attackers, stmAttackers;
   int swapList[32], slIndex = 1;
-  PieceType capturedType, pt;
+  PieceType captured;
   Color stm;
 
   assert(is_ok(m));
 
-  // As castle moves are implemented as capturing the rook, they have
-  // SEE == RookValueMidgame most of the times (unless the rook is under
-  // attack).
-  if (type_of(m) == CASTLE)
-      return 0;
-
   from = from_sq(m);
   to = to_sq(m);
-  capturedType = type_of(piece_on(to));
-  occ = pieces();
+  captured = type_of(piece_on(to));
+  occupied = pieces() ^ from;
 
   // Handle en passant moves
   if (type_of(m) == ENPASSANT)
   {
       Square capQq = to - pawn_push(sideToMove);
 
-      assert(!capturedType);
+      assert(!captured);
       assert(type_of(piece_on(capQq)) == PAWN);
 
       // Remove the captured pawn
-      occ ^= capQq;
-      capturedType = PAWN;
+      occupied ^= capQq;
+      captured = PAWN;
   }
+  else if (type_of(m) == CASTLE)
+      // Castle moves are implemented as king capturing the rook so cannot be
+      // handled correctly. Simply return 0 that is always the correct value
+      // unless the rook is ends up under attack.
+      return 0;
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
-  occ ^= from;
-  attackers = attackers_to(to, occ);
+  attackers = attackers_to(to, occupied);
 
   // If the opponent has no attackers we are finished
   stm = ~color_of(piece_on(from));
   stmAttackers = attackers & pieces(stm);
   if (!stmAttackers)
-      return PieceValue[Mg][capturedType];
+      return PieceValue[MG][captured];
 
   // The destination square is defended, which makes things rather more
   // difficult to compute. We proceed by building up a "swap list" containing
@@ -1264,43 +1296,32 @@ int Position::see(Move m) const {
   // destination square, where the sides alternately capture, and always
   // capture with the least valuable piece. After each capture, we look for
   // new X-ray attacks from behind the capturing piece.
-  swapList[0] = PieceValue[Mg][capturedType];
-  capturedType = type_of(piece_on(from));
+  swapList[0] = PieceValue[MG][captured];
+  captured = type_of(piece_on(from));
 
   do {
-      // Locate the least valuable attacker for the side to move. The loop
-      // below looks like it is potentially infinite, but it isn't. We know
-      // that the side to move still has at least one attacker left.
-      for (pt = PAWN; !(stmAttackers & pieces(pt)); pt++)
-          assert(pt < KING);
-
-      // Remove the attacker we just found from the 'occupied' bitboard,
-      // and scan for new X-ray attacks behind the attacker.
-      b = stmAttackers & pieces(pt);
-      occ ^= (b & (~b + 1));
-      attackers |=  (attacks_bb<ROOK>(to, occ)   & pieces(ROOK, QUEEN))
-                  | (attacks_bb<BISHOP>(to, occ) & pieces(BISHOP, QUEEN));
-
-      attackers &= occ; // Cut out pieces we've already done
+      assert(slIndex < 32);
 
       // Add the new entry to the swap list
-      assert(slIndex < 32);
-      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[Mg][capturedType];
+      swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
       slIndex++;
 
-      // Remember the value of the capturing piece, and change the side to
-      // move before beginning the next iteration.
-      capturedType = pt;
+      // Locate and remove from 'occupied' the next least valuable attacker
+      captured = next_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
+
+      attackers &= occupied; // Remove the just found attacker
       stm = ~stm;
       stmAttackers = attackers & pieces(stm);
 
-      // Stop before processing a king capture
-      if (capturedType == KING && stmAttackers)
+      if (captured == KING)
       {
-          assert(slIndex < 32);
-          swapList[slIndex++] = QueenValueMg * 16;
+          // Stop before processing a king capture
+          if (stmAttackers)
+              swapList[slIndex++] = QueenValueMg * 16;
+
           break;
       }
+
   } while (stmAttackers);
 
   // Having built the swap list, we negamax through it to find the best
@@ -1324,9 +1345,6 @@ void Position::clear() {
   for (int i = 0; i < 8; i++)
       for (int j = 0; j < 16; j++)
           pieceList[0][i][j] = pieceList[1][i][j] = SQ_NONE;
-
-  for (Square sq = SQ_A1; sq <= SQ_H8; sq++)
-      board[sq] = NO_PIECE;
 }
 
 
@@ -1440,7 +1458,7 @@ Value Position::compute_non_pawn_material(Color c) const {
   Value value = VALUE_ZERO;
 
   for (PieceType pt = KNIGHT; pt <= QUEEN; pt++)
-      value += piece_count(c, pt) * PieceValue[Mg][pt];
+      value += piece_count(c, pt) * PieceValue[MG][pt];
 
   return value;
 }
@@ -1449,20 +1467,17 @@ Value Position::compute_non_pawn_material(Color c) const {
 /// Position::is_draw() tests whether the position is drawn by material,
 /// repetition, or the 50 moves rule. It does not detect stalemates, this
 /// must be done by the search.
-template<bool SkipRepetition>
+template<bool CheckRepetition, bool CheckThreeFold>
 bool Position::is_draw() const {
 
-  // Draw by material?
   if (   !pieces(PAWN)
       && (non_pawn_material(WHITE) + non_pawn_material(BLACK) <= BishopValueMg))
       return true;
 
-  // Draw by the 50 moves rule?
   if (st->rule50 > 99 && (!in_check() || MoveList<LEGAL>(*this).size()))
       return true;
 
-  // Draw by repetition?
-  if (!SkipRepetition)
+  if (CheckRepetition)
   {
       int i = 4, e = std::min(st->rule50, st->pliesFromNull);
 
@@ -1470,15 +1485,13 @@ bool Position::is_draw() const {
       {
           StateInfo* stp = st->previous->previous;
 
-          do {
+          for (int cnt = 0; i <= e; i += 2)
+          {
               stp = stp->previous->previous;
 
-              if (stp->key == st->key)
+              if (stp->key == st->key && (!CheckThreeFold || ++cnt >= 2))
                   return true;
-
-              i +=2;
-
-          } while (i <= e);
+          }
       }
   }
 
@@ -1486,8 +1499,9 @@ bool Position::is_draw() const {
 }
 
 // Explicit template instantiations
-template bool Position::is_draw<false>() const;
-template bool Position::is_draw<true>() const;
+template bool Position::is_draw<true,  true>() const;
+template bool Position::is_draw<true, false>() const;
+template bool Position::is_draw<false,false>() const;
 
 
 /// Position::flip() flips position with the white and black sides reversed. This
@@ -1570,7 +1584,7 @@ bool Position::pos_is_ok(int* failedStep) const {
 
   if ((*step)++, debugKingCount)
   {
-      int kingCount[2] = {};
+      int kingCount[COLOR_NB] = {};
 
       for (Square s = SQ_A1; s <= SQ_H8; s++)
           if (type_of(piece_on(s)) == KING)

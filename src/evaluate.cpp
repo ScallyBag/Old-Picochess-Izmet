@@ -42,7 +42,7 @@ namespace {
     // attackedBy[color][piece type] is a bitboard representing all squares
     // attacked by a given color and piece type, attackedBy[color][0] contains
     // all squares attacked by the given color.
-    Bitboard attackedBy[2][8];
+    Bitboard attackedBy[COLOR_NB][PIECE_TYPE_NB];
 
     // kingRing[color] is the zone around the king which is considered
     // by the king safety evaluation. This consists of the squares directly
@@ -50,25 +50,25 @@ namespace {
     // squares two ranks in front of the king. For instance, if black's king
     // is on g8, kingRing[BLACK] is a bitboard containing the squares f8, h8,
     // f7, g7, h7, f6, g6 and h6.
-    Bitboard kingRing[2];
+    Bitboard kingRing[COLOR_NB];
 
     // kingAttackersCount[color] is the number of pieces of the given color
     // which attack a square in the kingRing of the enemy king.
-    int kingAttackersCount[2];
+    int kingAttackersCount[COLOR_NB];
 
     // kingAttackersWeight[color] is the sum of the "weight" of the pieces of the
     // given color which attack a square in the kingRing of the enemy king. The
     // weights of the individual piece types are given by the variables
     // QueenAttackWeight, RookAttackWeight, BishopAttackWeight and
     // KnightAttackWeight in evaluate.cpp
-    int kingAttackersWeight[2];
+    int kingAttackersWeight[COLOR_NB];
 
     // kingAdjacentZoneAttacksCount[color] is the number of attacks to squares
     // directly adjacent to the king of the given color. Pieces which attack
     // more than one square are counted multiple times. For instance, if black's
     // king is on g8 and there's a white knight on g5, this knight adds
     // 2 to kingAdjacentZoneAttacksCount[BLACK].
-    int kingAdjacentZoneAttacksCount[2];
+    int kingAdjacentZoneAttacksCount[COLOR_NB];
   };
 
   // Evaluation grain size, must be a power of 2
@@ -114,7 +114,7 @@ namespace {
 
   // OutpostBonus[PieceType][Square] contains outpost bonuses of knights and
   // bishops, indexed by piece type and square (from white's point of view).
-  const Value OutpostBonus[][64] = {
+  const Value OutpostBonus[][SQUARE_NB] = {
   {
   //  A     B     C     D     E     F     G     H
     V(0), V(0), V(0), V(0), V(0), V(0), V(0), V(0), // Knights
@@ -134,11 +134,11 @@ namespace {
 
   // ThreatBonus[attacking][attacked] contains threat bonuses according to
   // which piece type attacks which one.
-  const Score ThreatBonus[][8] = {
+  const Score ThreatBonus[][PIECE_TYPE_NB] = {
     {}, {},
     { S(0, 0), S( 7, 39), S( 0,  0), S(24, 49), S(41,100), S(41,100) }, // KNIGHT
     { S(0, 0), S( 7, 39), S(24, 49), S( 0,  0), S(41,100), S(41,100) }, // BISHOP
-    { S(0, 0), S(-1, 29), S(15, 49), S(15, 49), S( 0,  0), S(24, 49) }, // ROOK
+    { S(0, 0), S( 0, 22), S(15, 49), S(15, 49), S( 0,  0), S(24, 49) }, // ROOK
     { S(0, 0), S(15, 39), S(15, 39), S(15, 39), S(15, 39), S( 0,  0) }  // QUEEN
   };
 
@@ -153,12 +153,16 @@ namespace {
   // Bonus for having the side to move (modified by Joona Kiiski)
   const Score Tempo = make_score(24, 11);
 
-  // Rooks and queens on the 7th rank (modified by Joona Kiiski)
-  const Score RookOn7thBonus  = make_score(47, 98);
-  const Score QueenOn7thBonus = make_score(27, 54);
+  // Rooks and queens on the 7th rank
+  const Score RookOn7thBonus  = make_score(3, 20);
+  const Score QueenOn7thBonus = make_score(1,  8);
+
+  // Rooks and queens attacking pawns on the same rank
+  const Score RookOnPawnBonus  = make_score(3, 48);
+  const Score QueenOnPawnBonus = make_score(1, 40);
 
   // Rooks on open files (modified by Joona Kiiski)
-  const Score RookOpenFileBonus = make_score(43, 21);
+  const Score RookOpenFileBonus     = make_score(43, 21);
   const Score RookHalfOpenFileBonus = make_score(19, 10);
 
   // Penalty for rooks trapped inside a friendly king which has lost the
@@ -217,11 +221,11 @@ namespace {
 
   // KingDangerTable[Color][attackUnits] contains the actual king danger
   // weighted scores, indexed by color and by a calculated integer number.
-  Score KingDangerTable[2][128];
+  Score KingDangerTable[COLOR_NB][128];
 
   // TracedTerms[Color][PieceType || TracedType] contains a breakdown of the
   // evaluation terms, used when tracing.
-  Score TracedScores[2][16];
+  Score TracedScores[COLOR_NB][16];
   std::stringstream TraceStream;
 
   enum TracedType {
@@ -262,8 +266,6 @@ namespace {
 
 
 namespace Eval {
-
-  Color RootColor;
 
   /// evaluate() is the main evaluation function. It always computes two
   /// values, an endgame score and a middle game score, and interpolates
@@ -315,7 +317,7 @@ namespace Eval {
     Value margin;
     std::string totals;
 
-    RootColor = pos.side_to_move();
+    Search::RootColor = pos.side_to_move();
 
     TraceStream.str("");
     TraceStream << std::showpoint << std::showpos << std::fixed << std::setprecision(2);
@@ -362,7 +364,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
   assert(!pos.in_check());
 
   EvalInfo ei;
-  Value margins[2];
+  Value margins[COLOR_NB];
   Score score, mobilityWhite, mobilityBlack;
 
   // margins[] store the uncertainty estimation of position's evaluation
@@ -595,12 +597,18 @@ Value do_evaluate(const Position& pos, Value& margin) {
             && !(pos.pieces(Them, PAWN) & attack_span_mask(Us, s)))
             score += evaluate_outposts<Piece, Us>(pos, ei, s);
 
-        // Queen or rook on 7th rank
-        if (  (Piece == ROOK || Piece == QUEEN)
-            && relative_rank(Us, s) == RANK_7
-            && relative_rank(Us, pos.king_square(Them)) == RANK_8)
+        if ((Piece == ROOK || Piece == QUEEN) && relative_rank(Us, s) >= RANK_5)
         {
-            score += (Piece == ROOK ? RookOn7thBonus : QueenOn7thBonus);
+            // Major piece on 7th rank
+            if (   relative_rank(Us, s) == RANK_7
+                && relative_rank(Us, pos.king_square(Them)) == RANK_8)
+                score += (Piece == ROOK ? RookOn7thBonus : QueenOn7thBonus);
+
+            // Major piece attacking pawns on the same rank
+            Bitboard pawns = pos.pieces(Them, PAWN) & rank_bb(s);
+            if (pawns)
+                score += (Piece == ROOK ? RookOnPawnBonus
+                                        : QueenOnPawnBonus) * popcount<Max15>(pawns);
         }
 
         // Special extra evaluation for bishops
@@ -843,8 +851,8 @@ Value do_evaluate(const Position& pos, Value& margin) {
         // value that will be used for pruning because this value can sometimes
         // be very big, and so capturing a single attacking piece can therefore
         // result in a score change far bigger than the value of the captured piece.
-        score -= KingDangerTable[Us == Eval::RootColor][attackUnits];
-        margins[Us] += mg_value(KingDangerTable[Us == Eval::RootColor][attackUnits]);
+        score -= KingDangerTable[Us == Search::RootColor][attackUnits];
+        margins[Us] += mg_value(KingDangerTable[Us == Search::RootColor][attackUnits]);
     }
 
     if (Trace)

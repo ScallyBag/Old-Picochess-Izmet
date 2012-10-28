@@ -21,12 +21,14 @@
 #define SEARCH_H_INCLUDED
 
 #include <cstring>
+#include <memory>
+#include <stack>
 #include <vector>
 
 #include "misc.h"
+#include "position.h"
 #include "types.h"
 
-class Position;
 struct SplitPoint;
 
 namespace Search {
@@ -42,7 +44,7 @@ struct Stack {
   Move excludedMove;
   Move killers[2];
   Depth reduction;
-  Value eval;
+  Value staticEval;
   Value evalMargin;
   int skipNullMove;
 };
@@ -80,7 +82,7 @@ struct LimitsType {
   LimitsType() { memset(this, 0, sizeof(LimitsType)); }
   bool use_time_management() const { return !(movetime | depth | nodes | infinite); }
 
-  int time[2], inc[2], movestogo, depth, nodes, movetime, infinite, ponder;
+  int time[COLOR_NB], inc[COLOR_NB], movestogo, depth, nodes, movetime, infinite, ponder;
 };
 
 
@@ -91,11 +93,15 @@ struct SignalsType {
   bool stopOnPonderhit, firstRootMove, stop, failedLowAtRoot;
 };
 
+typedef std::auto_ptr<std::stack<StateInfo> > StateStackPtr;
+
 extern volatile SignalsType Signals;
 extern LimitsType Limits;
 extern std::vector<RootMove> RootMoves;
-extern Position RootPosition;
-extern Time SearchTime;
+extern Position RootPos;
+extern Color RootColor;
+extern Time::point SearchTime;
+extern StateStackPtr SetupStates;
 
 extern void init();
 extern size_t perft(Position& pos, Depth depth);

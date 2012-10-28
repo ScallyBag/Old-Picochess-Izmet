@@ -31,6 +31,31 @@
 const int MAX_THREADS = 32;
 const int MAX_SPLITPOINTS_PER_THREAD = 8;
 
+struct Mutex {
+  Mutex() { lock_init(l); }
+ ~Mutex() { lock_destroy(l); }
+
+  void lock() { lock_grab(l); }
+  void unlock() { lock_release(l); }
+
+private:
+  friend struct ConditionVariable;
+
+  Lock l;
+};
+
+struct ConditionVariable {
+  ConditionVariable() { cond_init(c); }
+ ~ConditionVariable() { cond_destroy(c); }
+
+  void wait(Mutex& m) { cond_wait(c, m.l); }
+  void wait_for(Mutex& m, int ms) { timed_wait(c, m.l, ms); }
+  void notify_one() { cond_signal(c); }
+
+private:
+  WaitCondition c;
+};
+
 class Thread;
 
 struct SplitPoint {
@@ -49,7 +74,8 @@ struct SplitPoint {
   SplitPoint* parent;
 
   // Shared data
-  Lock lock;
+  Mutex mutex;
+  Position* activePositions[MAX_THREADS];
   volatile uint64_t slavesMask;
   volatile int64_t nodes;
   volatile Value alpha;
@@ -86,8 +112,8 @@ public:
   PawnTable pawnTable;
   size_t idx;
   int maxPly;
-  Lock sleepLock;
-  WaitCondition sleepCond;
+  Mutex mutex;
+  ConditionVariable sleepCondition;
   NativeHandle handle;
   Fn start_fn;
   SplitPoint* volatile curSplitPoint;
@@ -105,8 +131,8 @@ public:
 class ThreadPool {
 
 public:
-  void init(); // No c'tor, Threads object is global and engine shall be fully initialized
-  ~ThreadPool();
+  void init(); // No c'tor and d'tor, threads rely on globals that should
+  void exit(); // be initialized and valid during the whole thread lifetime.
 
   Thread& operator[](size_t id) { return *threads[id]; }
   bool use_sleeping_threads() const { return useSleepingThreads; }
@@ -120,19 +146,20 @@ public:
   bool available_slave_exists(Thread* master) const;
   void set_timer(int msec);
   void wait_for_search_finished();
-  void start_searching(const Position& pos, const Search::LimitsType& limits,
-                       const std::vector<Move>& searchMoves);
+  void start_searching(const Position&, const Search::LimitsType&,
+                       const std::vector<Move>&, Search::StateStackPtr&);
 
   template <bool Fake>
   Value split(Position& pos, Search::Stack* ss, Value alpha, Value beta, Value bestValue, Move* bestMove,
-              Depth depth, Move threatMove, int moveCount, MovePicker* mp, int nodeType);
+              Depth depth, Move threatMove, int moveCount, MovePicker& mp, int nodeType);
 private:
   friend class Thread;
+  friend void check_time();
 
   std::vector<Thread*> threads;
   Thread* timer;
-  Lock splitLock;
-  WaitCondition sleepCond;
+  Mutex mutex;
+  ConditionVariable sleepCondition;
   Depth minimumSplitDepth;
   int maxThreadsPerSplitPoint;
   bool useSleepingThreads;

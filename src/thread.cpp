@@ -42,7 +42,7 @@ namespace { extern "C" {
 // Thread c'tor starts a newly-created thread of execution that will call
 // the idle loop function pointed by start_fn going immediately to sleep.
 
-Thread::Thread(Fn fn) {
+Thread::Thread(Fn fn) : splitPoints() {
 
   is_searching = do_exit = false;
   maxPly = splitPointsCnt = 0;
@@ -51,12 +51,6 @@ Thread::Thread(Fn fn) {
   idx = Threads.size();
 
   do_sleep = (fn != &Thread::main_loop); // Avoid a race with start_searching()
-
-  lock_init(sleepLock);
-  cond_init(sleepCond);
-
-  for (int j = 0; j < MAX_SPLITPOINTS_PER_THREAD; j++)
-      lock_init(splitPoints[j].lock);
 
   if (!thread_create(handle, start_routine, this))
   {
@@ -74,14 +68,7 @@ Thread::~Thread() {
 
   do_exit = true; // Search must be already finished
   wake_up();
-
   thread_join(handle); // Wait for thread termination
-
-  lock_destroy(sleepLock);
-  cond_destroy(sleepCond);
-
-  for (int j = 0; j < MAX_SPLITPOINTS_PER_THREAD; j++)
-      lock_destroy(splitPoints[j].lock);
 }
 
 
@@ -93,9 +80,9 @@ void Thread::timer_loop() {
 
   while (!do_exit)
   {
-      lock_grab(sleepLock);
-      timed_wait(sleepCond, sleepLock, maxPly ? maxPly : INT_MAX);
-      lock_release(sleepLock);
+      mutex.lock();
+      sleepCondition.wait_for(mutex, maxPly ? maxPly : INT_MAX);
+      mutex.unlock();
       check_time();
   }
 }
@@ -108,18 +95,18 @@ void Thread::main_loop() {
 
   while (true)
   {
-      lock_grab(sleepLock);
+      mutex.lock();
 
       do_sleep = true; // Always return to sleep after a search
       is_searching = false;
 
       while (do_sleep && !do_exit)
       {
-          cond_signal(Threads.sleepCond); // Wake up UI thread if needed
-          cond_wait(sleepCond, sleepLock);
+          Threads.sleepCondition.notify_one(); // Wake up UI thread if needed
+          sleepCondition.wait(mutex);
       }
 
-      lock_release(sleepLock);
+      mutex.unlock();
 
       if (do_exit)
           return;
@@ -127,6 +114,8 @@ void Thread::main_loop() {
       is_searching = true;
 
       Search::think();
+
+      assert(is_searching);
   }
 }
 
@@ -136,9 +125,9 @@ void Thread::main_loop() {
 
 void Thread::wake_up() {
 
-  lock_grab(sleepLock);
-  cond_signal(sleepCond);
-  lock_release(sleepLock);
+  mutex.lock();
+  sleepCondition.notify_one();
+  mutex.unlock();
 }
 
 
@@ -153,9 +142,9 @@ void Thread::wait_for_stop_or_ponderhit() {
 
   Signals.stopOnPonderhit = true;
 
-  lock_grab(sleepLock);
-  while (!Signals.stop) cond_wait(sleepCond, sleepLock);
-  lock_release(sleepLock);
+  mutex.lock();
+  while (!Signals.stop) sleepCondition.wait(mutex);;
+  mutex.unlock();
 }
 
 
@@ -201,24 +190,20 @@ bool Thread::is_available_to(Thread* master) const {
 
 void ThreadPool::init() {
 
-  cond_init(sleepCond);
-  lock_init(splitLock);
   timer = new Thread(&Thread::timer_loop);
   threads.push_back(new Thread(&Thread::main_loop));
   read_uci_options();
 }
 
 
-// d'tor cleanly terminates the threads when the program exits.
+// exit() cleanly terminates the threads before the program exits.
 
-ThreadPool::~ThreadPool() {
+void ThreadPool::exit() {
 
-  for (size_t i = 0; i < size(); i++)
+  delete timer; // As first becuase check_time() accesses threads data
+
+  for (size_t i = 0; i < threads.size(); i++)
       delete threads[i];
-
-  delete timer;
-  lock_destroy(splitLock);
-  cond_destroy(sleepCond);
 }
 
 
@@ -236,10 +221,10 @@ void ThreadPool::read_uci_options() {
 
   assert(requested > 0);
 
-  while (size() < requested)
+  while (threads.size() < requested)
       threads.push_back(new Thread(&Thread::idle_loop));
 
-  while (size() > requested)
+  while (threads.size() > requested)
   {
       delete threads.back();
       threads.pop_back();
@@ -253,7 +238,7 @@ void ThreadPool::read_uci_options() {
 
 void ThreadPool::wake_up() const {
 
-  for (size_t i = 0; i < size(); i++)
+  for (size_t i = 0; i < threads.size(); i++)
   {
       threads[i]->maxPly = 0;
       threads[i]->do_sleep = false;
@@ -269,8 +254,9 @@ void ThreadPool::wake_up() const {
 
 void ThreadPool::sleep() const {
 
-  for (size_t i = 1; i < size(); i++) // Main thread will go to sleep by itself
-      threads[i]->do_sleep = true; // to avoid a race with start_searching()
+  // Main thread will go to sleep by itself to avoid a race with start_searching()
+  for (size_t i = 1; i < threads.size(); i++)
+      threads[i]->do_sleep = true;
 }
 
 
@@ -279,7 +265,7 @@ void ThreadPool::sleep() const {
 
 bool ThreadPool::available_slave_exists(Thread* master) const {
 
-  for (size_t i = 0; i < size(); i++)
+  for (size_t i = 0; i < threads.size(); i++)
       if (threads[i]->is_available_to(master))
           return true;
 
@@ -298,8 +284,8 @@ bool ThreadPool::available_slave_exists(Thread* master) const {
 
 template <bool Fake>
 Value ThreadPool::split(Position& pos, Stack* ss, Value alpha, Value beta,
-                        Value bestValue, Move* bestMove, Depth depth,
-                        Move threatMove, int moveCount, MovePicker* mp, int nodeType) {
+                        Value bestValue, Move* bestMove, Depth depth, Move threatMove,
+                        int moveCount, MovePicker& mp, int nodeType) {
 
   assert(pos.pos_is_ok());
   assert(bestValue > -VALUE_INFINITE);
@@ -327,7 +313,7 @@ Value ThreadPool::split(Position& pos, Stack* ss, Value alpha, Value beta,
   sp.beta = beta;
   sp.nodeType = nodeType;
   sp.bestValue = bestValue;
-  sp.mp = mp;
+  sp.mp = &mp;
   sp.moveCount = moveCount;
   sp.pos = &pos;
   sp.nodes = 0;
@@ -341,10 +327,10 @@ Value ThreadPool::split(Position& pos, Stack* ss, Value alpha, Value beta,
   // Try to allocate available threads and ask them to start searching setting
   // is_searching flag. This must be done under lock protection to avoid concurrent
   // allocation of the same slave by another master.
-  lock_grab(sp.lock);
-  lock_grab(splitLock);
+  mutex.lock();
+  sp.mutex.lock();
 
-  for (size_t i = 0; i < size() && !Fake; ++i)
+  for (size_t i = 0; i < threads.size() && !Fake; ++i)
       if (threads[i]->is_available_to(master))
       {
           sp.slavesMask |= 1ULL << i;
@@ -360,8 +346,8 @@ Value ThreadPool::split(Position& pos, Stack* ss, Value alpha, Value beta,
 
   master->splitPointsCnt++;
 
-  lock_release(splitLock);
-  lock_release(sp.lock);
+  sp.mutex.unlock();
+  mutex.unlock();
 
   // Everything is set up. The master thread enters the idle loop, from which
   // it will instantly launch a search, because its is_searching flag is set.
@@ -379,8 +365,8 @@ Value ThreadPool::split(Position& pos, Stack* ss, Value alpha, Value beta,
   // We have returned from the idle loop, which means that all threads are
   // finished. Note that setting is_searching and decreasing splitPointsCnt is
   // done under lock protection to avoid a race with Thread::is_available_to().
-  lock_grab(sp.lock); // To protect sp.nodes
-  lock_grab(splitLock);
+  mutex.lock();
+  sp.mutex.lock();
 
   master->is_searching = true;
   master->splitPointsCnt--;
@@ -388,15 +374,15 @@ Value ThreadPool::split(Position& pos, Stack* ss, Value alpha, Value beta,
   pos.set_nodes_searched(pos.nodes_searched() + sp.nodes);
   *bestMove = sp.bestMove;
 
-  lock_release(splitLock);
-  lock_release(sp.lock);
+  sp.mutex.unlock();
+  mutex.unlock();
 
   return sp.bestValue;
 }
 
 // Explicit template instantiations
-template Value ThreadPool::split<false>(Position&, Stack*, Value, Value, Value, Move*, Depth, Move, int, MovePicker*, int);
-template Value ThreadPool::split<true>(Position&, Stack*, Value, Value, Value, Move*, Depth, Move, int, MovePicker*, int);
+template Value ThreadPool::split<false>(Position&, Stack*, Value, Value, Value, Move*, Depth, Move, int, MovePicker&, int);
+template Value ThreadPool::split<true>(Position&, Stack*, Value, Value, Value, Move*, Depth, Move, int, MovePicker&, int);
 
 
 // set_timer() is used to set the timer to trigger after msec milliseconds.
@@ -404,10 +390,10 @@ template Value ThreadPool::split<true>(Position&, Stack*, Value, Value, Value, M
 
 void ThreadPool::set_timer(int msec) {
 
-  lock_grab(timer->sleepLock);
+  timer->mutex.lock();
   timer->maxPly = msec;
-  cond_signal(timer->sleepCond); // Wake up and restart the timer
-  lock_release(timer->sleepLock);
+  timer->sleepCondition.notify_one(); // Wake up and restart the timer
+  timer->mutex.unlock();
 }
 
 
@@ -417,10 +403,10 @@ void ThreadPool::set_timer(int msec) {
 void ThreadPool::wait_for_search_finished() {
 
   Thread* t = main_thread();
-  lock_grab(t->sleepLock);
-  cond_signal(t->sleepCond); // In case is waiting for stop or ponderhit
-  while (!t->do_sleep) cond_wait(sleepCond, t->sleepLock);
-  lock_release(t->sleepLock);
+  t->mutex.lock();
+  t->sleepCondition.notify_one(); // In case is waiting for stop or ponderhit
+  while (!t->do_sleep) sleepCondition.wait(t->mutex);
+  t->mutex.unlock();
 }
 
 
@@ -428,16 +414,17 @@ void ThreadPool::wait_for_search_finished() {
 // a new search, then returns immediately.
 
 void ThreadPool::start_searching(const Position& pos, const LimitsType& limits,
-                                 const std::vector<Move>& searchMoves) {
+                                 const std::vector<Move>& searchMoves, StateStackPtr& states) {
   wait_for_search_finished();
 
-  SearchTime.restart(); // As early as possible
+  SearchTime = Time::now(); // As early as possible
 
   Signals.stopOnPonderhit = Signals.firstRootMove = false;
   Signals.stop = Signals.failedLowAtRoot = false;
 
-  RootPosition = pos;
+  RootPos = pos;
   Limits = limits;
+  SetupStates = states; // Ownership transfer here
   RootMoves.clear();
 
   for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)

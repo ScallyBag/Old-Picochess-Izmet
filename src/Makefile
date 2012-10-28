@@ -209,6 +209,7 @@ endif
 ifeq ($(COMP),mingw)
 	comp=mingw
 	CXX=g++
+	CC=gcc
 	profile_prepare = gcc-profile-prepare
 	profile_make = gcc-profile-make
 	profile_use = gcc-profile-use
@@ -218,6 +219,7 @@ endif
 ifeq ($(COMP),gcc)
 	comp=gcc
 	CXX=g++
+	CC=gcc
 	profile_prepare = gcc-profile-prepare
 	profile_make = gcc-profile-make
 	profile_use = gcc-profile-use
@@ -255,7 +257,7 @@ ifeq ($(comp),gcc)
 endif
 
 ifeq ($(comp),mingw)
-	CXXFLAGS += -Wextra -Wshadow
+	CXXFLAGS += -Wextra -Wshadow -DMINGW
 endif
 
 ifeq ($(comp),icc)

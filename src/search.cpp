@@ -97,11 +97,11 @@ namespace {
   template <NodeType NT>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth);
 
-  template <NodeType NT>
+  template <NodeType NT, bool InCheck>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth);
 
   void id_loop(Position& pos);
-  bool check_is_dangerous(Position &pos, Move move, Value futilityBase, Value beta);
+  bool check_is_dangerous(Position& pos, Move move, Value futilityBase, Value beta);
   bool connected_moves(const Position& pos, Move m1, Move m2);
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
@@ -632,7 +632,7 @@ namespace {
         && !pos.pawn_on_7th(pos.side_to_move()))
     {
         Value rbeta = beta - razor_margin(depth);
-        Value v = qsearch<NonPV>(pos, ss, rbeta-1, rbeta, DEPTH_ZERO);
+        Value v = qsearch<NonPV, false>(pos, ss, rbeta-1, rbeta, DEPTH_ZERO);
         if (v < rbeta)
             // Logically we should return (v + razor_margin(depth)), but
             // surprisingly this did slightly weaker in tests.
@@ -671,7 +671,7 @@ namespace {
 
         pos.do_null_move<true>(st);
         (ss+1)->skipNullMove = true;
-        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
+        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
                                       : - search<NonPV>(pos, ss+1, -beta, -alpha, depth-R);
         (ss+1)->skipNullMove = false;
         pos.do_null_move<false>(st);
@@ -941,7 +941,9 @@ split_point_start: // At split points actual search starts from here
       if (doFullDepthSearch)
       {
           alpha = SpNode ? sp->alpha : alpha;
-          value = newDepth < ONE_PLY ? -qsearch<NonPV>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
+          value = newDepth < ONE_PLY ?
+                          givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
+                                     : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
                                      : - search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth);
       }
 
@@ -949,9 +951,10 @@ split_point_start: // At split points actual search starts from here
       // high, in the latter case search only if value < beta, otherwise let the
       // parent node to fail low with value <= alpha and to try another move.
       if (PvNode && (pvMove || (value > alpha && (RootNode || value < beta))))
-          value = newDepth < ONE_PLY ? -qsearch<PV>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
+          value = newDepth < ONE_PLY ?
+                          givesCheck ? -qsearch<PV,  true>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
+                                     : -qsearch<PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
                                      : - search<PV>(pos, ss+1, -beta, -alpha, newDepth);
-
       // Step 17. Undo move
       pos.undo_move(move);
 
@@ -1092,12 +1095,13 @@ split_point_start: // At split points actual search starts from here
   // search function when the remaining depth is zero (or, to be more precise,
   // less than ONE_PLY).
 
-  template <NodeType NT>
+  template <NodeType NT, bool InCheck>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     const bool PvNode = (NT == PV);
 
     assert(NT == PV || NT == NonPV);
+    assert(InCheck == pos.in_check());
     assert(alpha >= -VALUE_INFINITE && alpha < beta && beta <= VALUE_INFINITE);
     assert(PvNode || (alpha == beta - 1));
     assert(depth <= DEPTH_ZERO);
@@ -1107,10 +1111,9 @@ split_point_start: // At split points actual search starts from here
     Key posKey;
     Move ttMove, move, bestMove;
     Value bestValue, value, ttValue, futilityValue, futilityBase;
-    bool inCheck, givesCheck, enoughMaterial, evasionPrunable;
+    bool givesCheck, enoughMaterial, evasionPrunable;
     Depth ttDepth;
 
-    inCheck = pos.in_check();
     ss->currentMove = bestMove = MOVE_NONE;
     ss->ply = (ss-1)->ply + 1;
 
@@ -1128,7 +1131,7 @@ split_point_start: // At split points actual search starts from here
     // Decide whether or not to include checks, this fixes also the type of
     // TT entry depth that we are going to use. Note that in qsearch we use
     // only two types of depth in TT: DEPTH_QS_CHECKS or DEPTH_QS_NO_CHECKS.
-    ttDepth = inCheck || depth >= DEPTH_QS_CHECKS ? DEPTH_QS_CHECKS
+    ttDepth = InCheck || depth >= DEPTH_QS_CHECKS ? DEPTH_QS_CHECKS
                                                   : DEPTH_QS_NO_CHECKS;
     if (   tte
         && tte->depth() >= ttDepth
@@ -1142,7 +1145,7 @@ split_point_start: // At split points actual search starts from here
     }
 
     // Evaluate the position statically
-    if (inCheck)
+    if (InCheck)
     {
         ss->staticEval = ss->evalMargin = VALUE_NONE;
         bestValue = futilityBase = -VALUE_INFINITE;
@@ -1196,7 +1199,7 @@ split_point_start: // At split points actual search starts from here
 
       // Futility pruning
       if (   !PvNode
-          && !inCheck
+          && !InCheck
           && !givesCheck
           &&  move != ttMove
           &&  enoughMaterial
@@ -1224,14 +1227,14 @@ split_point_start: // At split points actual search starts from here
 
       // Detect non-capture evasions that are candidate to be pruned
       evasionPrunable =   !PvNode
-                       &&  inCheck
+                       &&  InCheck
                        &&  bestValue > VALUE_MATED_IN_MAX_PLY
                        && !pos.is_capture(move)
                        && !pos.can_castle(pos.side_to_move());
 
       // Don't search moves with negative SEE values
       if (   !PvNode
-          && (!inCheck || evasionPrunable)
+          && (!InCheck || evasionPrunable)
           &&  move != ttMove
           &&  type_of(move) != PROMOTION
           &&  pos.see_sign(move) < 0)
@@ -1239,7 +1242,7 @@ split_point_start: // At split points actual search starts from here
 
       // Don't search useless checks
       if (   !PvNode
-          && !inCheck
+          && !InCheck
           &&  givesCheck
           &&  move != ttMove
           && !pos.is_capture_or_promotion(move)
@@ -1255,7 +1258,8 @@ split_point_start: // At split points actual search starts from here
 
       // Make and search the move
       pos.do_move(move, st, ci, givesCheck);
-      value = -qsearch<NT>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
+      value = givesCheck ? -qsearch<NT,  true>(pos, ss+1, -beta, -alpha, depth - ONE_PLY)
+                         : -qsearch<NT, false>(pos, ss+1, -beta, -alpha, depth - ONE_PLY);
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
@@ -1285,7 +1289,7 @@ split_point_start: // At split points actual search starts from here
 
     // All legal moves have been searched. A special case: If we're in check
     // and no legal moves were found, it is checkmate.
-    if (inCheck && bestValue == -VALUE_INFINITE)
+    if (InCheck && bestValue == -VALUE_INFINITE)
         return mated_in(ss->ply); // Plies to mate from the root
 
     TT.store(posKey, value_to_tt(bestValue, ss->ply),
@@ -1298,40 +1302,56 @@ split_point_start: // At split points actual search starts from here
   }
 
 
-  // check_is_dangerous() tests if a checking move can be pruned in qsearch().
-  // bestValue is updated only when returning false because in that case move
-  // will be pruned.
+  // value_to_tt() adjusts a mate score from "plies to mate from the root" to
+  // "plies to mate from the current position". Non-mate scores are unchanged.
+  // The function is called before storing a value to the transposition table.
 
-  bool check_is_dangerous(Position &pos, Move move, Value futilityBase, Value beta)
+  Value value_to_tt(Value v, int ply) {
+
+    assert(v != VALUE_NONE);
+
+    return  v >= VALUE_MATE_IN_MAX_PLY  ? v + ply
+          : v <= VALUE_MATED_IN_MAX_PLY ? v - ply : v;
+  }
+
+
+  // value_from_tt() is the inverse of value_to_tt(): It adjusts a mate score
+  // from the transposition table (where refers to the plies to mate/be mated
+  // from current position) to "plies to mate/be mated from the root".
+
+  Value value_from_tt(Value v, int ply) {
+
+    return  v == VALUE_NONE             ? VALUE_NONE
+          : v >= VALUE_MATE_IN_MAX_PLY  ? v - ply
+          : v <= VALUE_MATED_IN_MAX_PLY ? v + ply : v;
+  }
+
+
+  // check_is_dangerous() tests if a checking move can be pruned in qsearch()
+
+  bool check_is_dangerous(Position& pos, Move move, Value futilityBase, Value beta)
   {
-    Bitboard b, occ, oldAtt, newAtt, kingAtt;
-    Square from, to, ksq;
-    Piece pc;
-    Color them;
+    Piece pc = pos.piece_moved(move);
+    Square from = from_sq(move);
+    Square to = to_sq(move);
+    Color them = ~pos.side_to_move();
+    Square ksq = pos.king_square(them);
+    Bitboard enemies = pos.pieces(them);
+    Bitboard kingAtt = pos.attacks_from<KING>(ksq);
+    Bitboard occ = pos.pieces() ^ from ^ ksq;
+    Bitboard oldAtt = pos.attacks_from(pc, from, occ);
+    Bitboard newAtt = pos.attacks_from(pc, to, occ);
 
-    from = from_sq(move);
-    to = to_sq(move);
-    them = ~pos.side_to_move();
-    ksq = pos.king_square(them);
-    kingAtt = pos.attacks_from<KING>(ksq);
-    pc = pos.piece_moved(move);
-
-    occ = pos.pieces() ^ from ^ ksq;
-    oldAtt = pos.attacks_from(pc, from, occ);
-    newAtt = pos.attacks_from(pc,   to, occ);
-
-    // Rule 1. Checks which give opponent's king at most one escape square are dangerous
-    b = kingAtt & ~pos.pieces(them) & ~newAtt & ~(1ULL << to);
-
-    if (!more_than_one(b))
+    // Checks which give opponent's king at most one escape square are dangerous
+    if (!more_than_one(kingAtt & ~(enemies | newAtt | to)))
         return true;
 
-    // Rule 2. Queen contact check is very dangerous
+    // Queen contact check is very dangerous
     if (type_of(pc) == QUEEN && (kingAtt & to))
         return true;
 
-    // Rule 3. Creating new double threats with checks
-    b = pos.pieces(them) & newAtt & ~oldAtt & ~(1ULL << ksq);
+    // Creating new double threats with checks is dangerous
+    Bitboard b = (enemies ^ ksq) & newAtt & ~oldAtt;
     while (b)
     {
         // Note that here we generate illegal "double move"!
@@ -1391,31 +1411,6 @@ split_point_start: // At split points actual search starts from here
   }
 
 
-  // value_to_tt() adjusts a mate score from "plies to mate from the root" to
-  // "plies to mate from the current position". Non-mate scores are unchanged.
-  // The function is called before storing a value to the transposition table.
-
-  Value value_to_tt(Value v, int ply) {
-
-    assert(v != VALUE_NONE);
-
-    return  v >= VALUE_MATE_IN_MAX_PLY  ? v + ply
-          : v <= VALUE_MATED_IN_MAX_PLY ? v - ply : v;
-  }
-
-
-  // value_from_tt() is the inverse of value_to_tt(): It adjusts a mate score
-  // from the transposition table (where refers to the plies to mate/be mated
-  // from current position) to "plies to mate/be mated from the root".
-
-  Value value_from_tt(Value v, int ply) {
-
-    return  v == VALUE_NONE             ? VALUE_NONE
-          : v >= VALUE_MATE_IN_MAX_PLY  ? v - ply
-          : v <= VALUE_MATED_IN_MAX_PLY ? v + ply : v;
-  }
-
-
   // connected_threat() tests whether it is safe to forward prune a move or if
   // is somehow connected to the threat move returned by null search.
 
@@ -1426,12 +1421,10 @@ split_point_start: // At split points actual search starts from here
     assert(!pos.is_capture_or_promotion(m));
     assert(!pos.is_passed_pawn_push(m));
 
-    Square mfrom, mto, tfrom, tto;
-
-    mfrom = from_sq(m);
-    mto = to_sq(m);
-    tfrom = from_sq(threat);
-    tto = to_sq(threat);
+    Square mfrom = from_sq(m);
+    Square mto = to_sq(m);
+    Square tfrom = from_sq(threat);
+    Square tto = to_sq(threat);
 
     // Case 1: Don't prune moves which move the threatened piece
     if (mfrom == tto)
@@ -1439,11 +1432,26 @@ split_point_start: // At split points actual search starts from here
 
     // Case 2: If the threatened piece has value less than or equal to the
     // value of the threatening piece, don't prune moves which defend it.
-    if (   pos.is_capture(threat)
+    if (    pos.is_capture(threat)
         && (   PieceValue[MG][pos.piece_on(tfrom)] >= PieceValue[MG][pos.piece_on(tto)]
-            || type_of(pos.piece_on(tfrom)) == KING)
-        && pos.move_attacks_square(m, tto))
-        return true;
+            || type_of(pos.piece_on(tfrom)) == KING))
+    {
+        // Update occupancy as if the piece and the threat are moving
+        Bitboard occ = pos.pieces() ^ mfrom ^ mto ^ tfrom;
+        Piece piece = pos.piece_on(mfrom);
+
+        // The moved piece attacks the square 'tto' ?
+        if (pos.attacks_from(piece, mto, occ) & tto)
+            return true;
+
+        // Scan for possible X-ray attackers behind the moved piece
+        Bitboard xray =  (attacks_bb<  ROOK>(tto, occ) & pos.pieces(color_of(piece), QUEEN, ROOK))
+                       | (attacks_bb<BISHOP>(tto, occ) & pos.pieces(color_of(piece), QUEEN, BISHOP));
+
+        // Verify attackers are triggered by our move and not already existing
+        if (xray && (xray ^ (xray & pos.attacks_from<QUEEN>(tto))))
+            return true;
+    }
 
     // Case 3: If the moving piece in the threatened move is a slider, don't
     // prune safe moves which block its ray.
@@ -1506,23 +1514,24 @@ split_point_start: // At split points actual search starts from here
 
     std::stringstream s;
     Time::point elaspsed = Time::now() - SearchTime + 1;
+    size_t uciPVSize = std::min((size_t)Options["MultiPV"], RootMoves.size());
     int selDepth = 0;
 
     for (size_t i = 0; i < Threads.size(); i++)
         if (Threads[i].maxPly > selDepth)
             selDepth = Threads[i].maxPly;
 
-    for (size_t i = 0; i < std::min((size_t)Options["MultiPV"], RootMoves.size()); i++)
+    for (size_t i = 0; i < uciPVSize; i++)
     {
         bool updated = (i <= PVIdx);
 
         if (depth == 1 && !updated)
             continue;
 
-        int d = (updated ? depth : depth - 1);
-        Value v = (updated ? RootMoves[i].score : RootMoves[i].prevScore);
+        int d   = updated ? depth : depth - 1;
+        Value v = updated ? RootMoves[i].score : RootMoves[i].prevScore;
 
-        if (s.rdbuf()->in_avail())
+        if (s.rdbuf()->in_avail()) // Not at first line
             s << "\n";
 
         s << "info depth " << d
@@ -1553,29 +1562,27 @@ void RootMove::extract_pv_from_tt(Position& pos) {
 
   StateInfo state[MAX_PLY_PLUS_2], *st = state;
   TTEntry* tte;
-  int ply = 1;
+  int ply = 0;
   Move m = pv[0];
 
-  assert(m != MOVE_NONE && pos.is_pseudo_legal(m));
-
   pv.clear();
-  pv.push_back(m);
-  pos.do_move(m, *st++);
 
-  while (   (tte = TT.probe(pos.key())) != NULL
-         && (m = tte->move()) != MOVE_NONE // Local copy, TT entry could change
-         && pos.is_pseudo_legal(m)
-         && pos.pl_move_is_legal(m, pos.pinned_pieces())
-         && ply < MAX_PLY
-         && (!pos.is_draw<true, true>() || ply < 2))
-  {
+  do {
       pv.push_back(m);
-      pos.do_move(m, *st++);
-      ply++;
-  }
-  pv.push_back(MOVE_NONE);
 
-  do pos.undo_move(pv[--ply]); while (ply);
+      assert(pos.move_is_legal(pv[ply]));
+      pos.do_move(pv[ply++], *st++);
+      tte = TT.probe(pos.key());
+
+  } while (   tte
+           && pos.is_pseudo_legal(m = tte->move()) // Local copy, TT could change
+           && pos.pl_move_is_legal(m, pos.pinned_pieces())
+           && ply < MAX_PLY
+           && (!pos.is_draw<true, true>() || ply < 2));
+
+  pv.push_back(MOVE_NONE); // Must be zero-terminating
+
+  while (ply) pos.undo_move(pv[--ply]);
 }
 
 
@@ -1587,27 +1594,28 @@ void RootMove::insert_pv_in_tt(Position& pos) {
 
   StateInfo state[MAX_PLY_PLUS_2], *st = state;
   TTEntry* tte;
-  Key k;
-  Value v, m = VALUE_NONE;
   int ply = 0;
-
-  assert(pv[ply] != MOVE_NONE && pos.is_pseudo_legal(pv[ply]));
+  Value v, m;
 
   do {
-      k = pos.key();
-      tte = TT.probe(k);
+      tte = TT.probe(pos.key());
 
-      // Don't overwrite existing correct entries
-      if (!tte || tte->move() != pv[ply])
+      if (!tte || tte->move() != pv[ply]) // Don't overwrite correct entries
       {
-          v = (pos.in_check() ? VALUE_NONE : evaluate(pos, m));
-          TT.store(k, VALUE_NONE, BOUND_NONE, DEPTH_NONE, pv[ply], v, m);
+          if (pos.in_check())
+              v = m = VALUE_NONE;
+          else
+              v = evaluate(pos, m);
+
+          TT.store(pos.key(), VALUE_NONE, BOUND_NONE, DEPTH_NONE, pv[ply], v, m);
       }
-      pos.do_move(pv[ply], *st++);
 
-  } while (pv[++ply] != MOVE_NONE);
+      assert(pos.move_is_legal(pv[ply]));
+      pos.do_move(pv[ply++], *st++);
 
-  do pos.undo_move(pv[--ply]); while (ply);
+  } while (pv[ply] != MOVE_NONE);
+
+  while (ply) pos.undo_move(pv[--ply]);
 }
 
 

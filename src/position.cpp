@@ -473,37 +473,6 @@ Bitboard Position::attacks_from(Piece p, Square s, Bitboard occ) {
 }
 
 
-/// Position::move_attacks_square() tests whether a move from the current
-/// position attacks a given square.
-
-bool Position::move_attacks_square(Move m, Square s) const {
-
-  assert(is_ok(m));
-  assert(is_ok(s));
-
-  Bitboard occ, xray;
-  Square from = from_sq(m);
-  Square to = to_sq(m);
-  Piece piece = piece_moved(m);
-
-  assert(!is_empty(from));
-
-  // Update occupancy as if the piece is moving
-  occ = pieces() ^ from ^ to;
-
-  // The piece moved in 'to' attacks the square 's' ?
-  if (attacks_from(piece, to, occ) & s)
-      return true;
-
-  // Scan for possible X-ray attackers behind the moved piece
-  xray =  (attacks_bb<  ROOK>(s, occ) & pieces(color_of(piece), QUEEN, ROOK))
-        | (attacks_bb<BISHOP>(s, occ) & pieces(color_of(piece), QUEEN, BISHOP));
-
-  // Verify attackers are triggered by our move and not already existing
-  return xray && (xray ^ (xray & attacks_from<QUEEN>(s)));
-}
-
-
 /// Position::pl_move_is_legal() tests whether a pseudo-legal move is legal
 
 bool Position::pl_move_is_legal(Move m, Bitboard pinned) const {
@@ -770,9 +739,9 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   Key k = st->key;
 
   // Copy some fields of old state to our new StateInfo object except the ones
-  // which are recalculated from scratch anyway, then switch our state pointer
-  // to point to the new, ready to be updated, state.
-  memcpy(&newSt, st, sizeof(ReducedStateInfo));
+  // which are going to be recalculated from scratch anyway, then switch our state
+  // pointer to point to the new, ready to be updated, state.
+  memcpy(&newSt, st, StateCopySize64 * sizeof(uint64_t));
 
   newSt.previous = st;
   st = &newSt;
@@ -1479,13 +1448,13 @@ bool Position::is_draw() const {
 
   if (CheckRepetition)
   {
-      int i = 4, e = std::min(st->rule50, st->pliesFromNull), rep_count=0;
+      int i = 4, e = std::min(st->rule50, st->pliesFromNull), cnt;
 
       if (i <= e)
       {
           StateInfo* stp = st->previous->previous;
 
-          for (int cnt = 0; i <= e; i += 2)
+          for (cnt = 0; i <= e; i += 2)
           {
               stp = stp->previous->previous;
               if (stp->key == st->key && (!CheckThreeFold || ++cnt >= 2))

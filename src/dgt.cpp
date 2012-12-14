@@ -52,12 +52,13 @@ bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 const char* bookPath="/home/miniand/git/Stockfish/books/";
 
-enum PlayMode {GAME, BOOK, ANALYSIS, TRAINING} playMode;
+enum PlayMode {ANALYSIS, GAME, BOOK, TRAINING} playMode;
 
-enum ClockMode { FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL} clockMode;
+enum ClockMode { INFINITE, FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL } clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
 bool computerMoveFENReached=false, searching = false;
 string ponderHitFEN="";
+
 
 
 void resetClock()
@@ -65,7 +66,8 @@ void resetClock()
     limits=resetLimits;
     if(clockMode==BLITZ) { wTime=bTime=blitzTime; fischerInc=0; }
     if(clockMode==BLITZFISCHER) { wTime=bTime=blitzTime; }
-    if(clockMode==FIXEDTIME) { limits.movetime=fixedTime; }  
+    if(clockMode==FIXEDTIME) { limits.movetime=fixedTime; }
+    if(clockMode==INFINITE) { limits.infinite=true; }
 }
 void printTimeOnClock(int wClockTime,int bClockTime, bool wDots, bool bDots);
 
@@ -215,15 +217,16 @@ void configure(string fen)
     // White queen on a5
     if (fen =="rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  book", true, false); playMode=BOOK; resetClock();}
     // White queen on b5
-    if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("analyz", true, false); playMode=ANALYSIS; resetClock();}
+    if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("analyz", true, false); playMode=ANALYSIS; clockMode = INFINITE; resetClock();}
     // White queen on c5
-    if (fen =="rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock(" train", true, false); playMode=TRAINING; resetClock();}
+    if (fen =="rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock(" train", true, false); playMode=TRAINING; clockMode = INFINITE; resetClock();}
     // White queen on d5
     if (fen =="rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  game", true, false); playMode=GAME; resetClock();}
 
 
     //choose opening book
     typedef map<string, string> BookMap; 
+
     static const BookMap::value_type rawData[] = {
        BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "nobook"),
        BookMap::value_type("rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "fun"),
@@ -314,12 +317,12 @@ Move isPlayable(const string& _fen)
 	{
 		pos.undo_move(*rit);
         if(pos.side_to_move()!=computerPlays) continueSearch=false; //stop searching in the game when we reached a position where human has the move
-		if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays)) //we found a position that was played
+		if((pos.to_fen().find(fen) != string::npos) && (pos.side_to_move()!=computerPlays || clockMode==INFINITE)) //we found a position that was played
 		{
 			UCI::loop("stop"); //stop the current search
             ponderHitFEN="";
 			cout << "Rolling back to position" << pos.to_fen() << endl;
-			dgtnixPrintMessageOnClock(" undo ", true, false);
+			dgtnixPrintMessageOnClock(" undo ", false, false);
 			game.erase((rit+1).base(),game.end()); //delete the moves from the game
 			return MOVE_NONE;
 		}
@@ -415,24 +418,97 @@ void* wakeUpEverySecond(void*)
     return NULL;
 }
 
-bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or false every second
+void fitStringToDgt(string& s)
+{
+// The string manipulation algorithm can be optimized to doing one call for erase and appending blanks if needed.
+        // erase from end if more than 6 chars
+    while (s.length() > 6) {
+        s.erase(s.length() - 1, 1);
+    }
 
-void display_top_book_moves( PolyglotBook& book, const Position& pos, const int num) {
-        // Display top 3 moves in reverse order of strength so that the top move is on the clock. 3 Moves without delay is not that bad
-        vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], num);
+    while (s.length() < 6) {
+        s = " " + s;
+    }
+    
+}
 
-        for (vector<Move>::reverse_iterator it = book_moves.rbegin(); it != book_moves.rend(); ++it) {
-            // Dont beep when showing book moves, can be annoying
-            printMoveOnClock(*it, false);
-            //                            sleep(1);
+void display_top_book_moves(PolyglotBook& book, const Position& pos, const int num) {
+    // Display top 3 moves in reverse order of strength so that the top move is on the clock. 3 Moves without delay is not that bad
+    vector<Move> book_moves = book.probe_moves(pos, Options["Book File"], num);
+
+    for (vector<Move>::reverse_iterator it = book_moves.rbegin(); it != book_moves.rend(); ++it) {
+        // Dont beep when showing book moves, can be annoying
+        printMoveOnClock(*it, false);
+        //                            sleep(1);
+    }
+    }
+
+void* infiniteAnalysis(void *) {
+
+    while (true) {
+        if (clockMode == INFINITE && searching) {
+//            PolyglotBook* book;
+//            book = (PolyglotBook *) pbook;
+            //            book = (PolyglotBook) &pbook;
+            sleep(2);
+
+//            Move bookMove = book->probe(Search::RootPos, Options["Book File"], Options["Best Book Move"]);
+//            if (bookMove && Options["OwnBook"]) {
+//                display_top_book_moves(*book, Search::RootPos, 3);
+//            } else {
+
+            string uci_score = Search::UciPvDgt.score;
+
+            // Remove the words 'cp' from output and replace with just 'p' (centipawns) to save clock space
+            if (uci_score[0] == 'c' && uci_score[1] == 'p') {
+                uci_score.erase(0, 1);
+            }
+            // Some trimming on the 'mate' message to save space on the DGT clock. Simple 'm' is sufficient
+            if (uci_score[0] == 'm' && uci_score[1] == 'a' && uci_score[2] == 't' && uci_score[3] == 'e') {
+                uci_score.erase(1, 3);
+            }
+
+            replace(uci_score.begin(), uci_score.end(), '-', 'b'); //Replace minus sign with 'b' as minus sign is not available on DGT
+
+            fitStringToDgt(uci_score);
+
+            dgtnixPrintMessageOnClock(uci_score.c_str(), false, false);
+
+            stringstream s_depth;
+            s_depth << Search::UciPvDgt.depth;
+            string depth_str = s_depth.str();
+            depth_str = 'd' + depth_str; // Add a 'd' in front on depth to make output clear
+            fitStringToDgt(depth_str);
+
+            dgtnixPrintMessageOnClock(depth_str.c_str(), false, false);
+
+//            stringstream s_nps;
+//            s_nps << (int) Search::UciPvDgt.nps / 1000;
+//            string nps = s_nps.str();
+//            nps = 'n' + nps;
+//            fitStringToDgt(nps);
+//
+//            dgtnixPrintMessageOnClock(nps.c_str(), false, false);
+
+            //Display the best move computer suggestion only in analysis mode
+            if (playMode == ANALYSIS) {
+                printMoveOnClock(Search::RootMoves[0].pv[0], false);
+            }
+
+            
         }
     }
+    return NULL;
+
+}
+
+bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or false every second
 
 void loop(const string& args) {
 	// Initialization
 	Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
-	fixedTime = 5000; clockMode=FIXEDTIME; resetClock(); //search defaults to 5 seconds per move
+	fixedTime = 5000; clockMode=INFINITE; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime=Time::now();;
@@ -463,7 +539,7 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic014", true, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock("pic014", false, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
@@ -477,12 +553,17 @@ void loop(const string& args) {
     
     // Start the wakeup thread
     pthread_t wakeUpThread;
-    pthread_create( &wakeUpThread, NULL, wakeUpEverySecond, (void*)NULL);
+    pthread_create( &wakeUpThread, NULL, wakeUpEverySecond, (void*) NULL);
+
+    pthread_t infiniteThread;
+    pthread_create( &infiniteThread, NULL, infiniteAnalysis, (void*) NULL);
 
 	// Main DGT event loop
 	while (true) {
         sem_wait(&dgtnixEventSemaphore);
-        //cout<<"In event loop!"<<endl;
+//        cout<<"In event loop!"<<endl;
+//        cout <<"Clock mode:"<< clockMode;
+        
         string s = getDgtFEN();
         
         //Display time on clock
@@ -507,6 +588,12 @@ void loop(const string& args) {
 			cout << currentFEN << endl;
 			configure(currentFEN); //on board configuration
             
+            if (searching && clockMode==INFINITE) {
+                // stop search as a new board position has occurred
+                Search::Signals.stop = true;
+            }
+            
+            
             //Test if we reached the computer move fen
             if(!searching && !computerMoveFENReached && (computerMoveFEN.find(s.substr(0, s.find(' ')))!= string::npos))
             {
@@ -520,7 +607,9 @@ void loop(const string& args) {
 			//Test if we reach a playable position in the current game
 			Move move=isPlayable(currentFEN);
 			cout<< "-------------------------Move:" << move <<  endl;
-			if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
+//            if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
+            if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && ((computerPlays==WHITE) || clockMode==INFINITE)) )
+    
 			{
 				//if(searching) UCI::loop("stop"); //stop the current search
 				playerMove=move;
@@ -558,7 +647,7 @@ void loop(const string& args) {
       
 				//Check if we can find a move in the book
 				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
-				if(bookMove && Options["OwnBook"] && !limits.infinite)
+				if(bookMove && Options["OwnBook"])
 				{
 					UCI::loop("stop");
                     searching=false;
@@ -573,7 +662,7 @@ void loop(const string& args) {
 
                     else {
                         printMoveOnClock(bookMove);
-					game.push_back(bookMove);
+                        game.push_back(bookMove);
 
                         if (playMode==BOOK) {
                             pos.do_move(bookMove, SetupStates->top());
@@ -648,48 +737,9 @@ void loop(const string& args) {
 			//do the moves in the game
 			if(playerMove!=MOVE_NONE) game.push_back(playerMove);
             
-            if (playMode==ANALYSIS || playMode==TRAINING)
-            {
-                string uci_score = score_to_uci(Search::RootMoves[0].score);
-
-                //Display the best move computer suggestion only in analysis mode
-                if (playMode==ANALYSIS)
-                {
-                    printMoveOnClock(Search::RootMoves[0].pv[0],false);
-                    sleep(1);
-                }
-                
-                // Remove the words 'cp' from output to save clock space
-                if (uci_score[0] == 'c' && uci_score[1] == 'p') {
-
-                        uci_score.erase(0,2);
-                }
-                // TODO: Some trimming on the 'mate' message
-                if (uci_score[0] == 'm' && uci_score[1] == 'a' && uci_score[2] == 't' && uci_score[3] == 'e') {
-
-                        uci_score.erase(1,3);
-                }
-                
-                // The string manipulation algorithm can be optimized to doing one call for erase and appending blanks if needed.
-                // erase from end if more than 6 chars
-                while (uci_score.length()>6)
-                {
-                    uci_score.erase(uci_score.length()-1,1);
-                }
-
-                while (uci_score.length() < 6) {
-                    uci_score = " " + uci_score;
-                }
-
-                dgtnixPrintMessageOnClock(uci_score.c_str(), false, false);
-                    
-
-            }
-            else
-            {
+            if (clockMode!=INFINITE) {
                 printMoveOnClock(Search::RootMoves[0].pv[0]);
-			game.push_back(Search::RootMoves[0].pv[0]);      
-            
+                game.push_back(Search::RootMoves[0].pv[0]);
             }
 
             finishSearch:

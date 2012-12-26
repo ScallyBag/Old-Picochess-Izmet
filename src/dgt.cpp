@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <unistd.h>
+#include <deque>
 
 
 #include "evaluate.h"
@@ -51,6 +52,11 @@ vector<Move> game;
 bool boardReversed=false;
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
 const char* bookPath="/home/miniand/git/Stockfish/books/";
+bool setupPosition=false; // If a custom position is setup
+bool customPosition = false;
+deque<string> fenQueue;
+u_int MAX_FEN_QUEUE_SIZE = 3; 
+char* customStartFEN;
 
 enum PlayMode {ANALYSIS, GAME, BOOK, TRAINING} playMode;
 
@@ -59,6 +65,12 @@ int fixedTime, blitzTime, fischerInc, wTime, bTime;
 bool computerMoveFENReached=false, searching = false;
 string ponderHitFEN="";
 
+void addToFenQueue(string fen) {
+    fenQueue.push_back(fen);
+    if (fenQueue.size()>MAX_FEN_QUEUE_SIZE) {
+        fenQueue.pop_front();
+    }
+}
 
 
 void resetClock()
@@ -71,6 +83,18 @@ void resetClock()
 }
 void printTimeOnClock(int wClockTime,int bClockTime, bool wDots, bool bDots);
 
+char* getStartFEN() {
+    char * fen;
+            
+    if (customPosition) {
+        fen = customStartFEN;
+    }
+    else {
+        fen = const_cast<char *> (StartFEN);
+    }
+    return fen;
+
+}
 
 /// Give the current board setup as FEN string
 /// char  :  tomove = 'w' or 'b' : the side to move (white is default)
@@ -223,7 +247,35 @@ void configure(string fen)
     // White queen on d5
     if (fen =="rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  game", true, false); playMode=GAME; resetClock();}
 
+    if (setupPosition) {
+        // Search for both white and black kings
+        if (fen.find('K') != string::npos && fen.find('k') != string::npos) {
+            // if white and black kings exist, see that the position has occurred twice in the last 3 FENs
+            // If so, this is the new starting position!
+            int matches = 0;
+            for (deque<string>::iterator it = fenQueue.begin(); it!=fenQueue.end(); ++it) {
+                if (fen == *it) { 
+                    ++matches;
+                }
+            }
+            if (matches>=1) {
+               // match
+//                StartFEN= const_cast<char *> (fen.c_str());
+                setupPosition = false;
+                customPosition = true;
+                customStartFEN = const_cast<char *> (fen.c_str());
+                cout << "Custom_start_fen: " << customStartFEN;
+            }
 
+        } 
+        
+        addToFenQueue(fen);
+    }
+    
+    // Setup Custom position
+    // White queens on a1 and h1
+    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); computerPlays=WHITE; setupPosition=true; resetClock();}
+    
     //choose opening book
     typedef map<string, string> BookMap; 
 
@@ -291,7 +343,7 @@ void configure(string fen)
 /// If true, return the move leading to this fen, else return MOVE_NONE
 Move isPlayable(const string& _fen)
 {
-	Position pos(StartFEN, false, Threads.main_thread()); // The root position
+	Position pos(getStartFEN(), false, Threads.main_thread()); // The root position
 	stack<StateInfo> states;
 	string fen=_fen.substr(0, _fen.find(' '));
 
@@ -504,9 +556,9 @@ void* infiniteAnalysis(void *) {
 
 bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or false every second
 
+
 void loop(const string& args) {
 	// Initialization
-	Position pos(StartFEN, false, Threads.main_thread()); // The root position
 	computerPlays=BLACK;
 	fixedTime = 5000; clockMode=INFINITE; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
@@ -557,13 +609,12 @@ void loop(const string& args) {
 
     pthread_t infiniteThread;
     pthread_create( &infiniteThread, NULL, infiniteAnalysis, (void*) NULL);
+    Position pos;
 
 	// Main DGT event loop
 	while (true) {
         sem_wait(&dgtnixEventSemaphore);
 //        cout<<"In event loop!"<<endl;
-//        cout <<"Clock mode:"<< clockMode;
-        
         string s = getDgtFEN();
         
         //Display time on clock
@@ -584,9 +635,10 @@ void loop(const string& args) {
         
 		if (currentFEN != s) { //There is some change on the DGT board
 			currentFEN = s;
-
+            
 			cout << currentFEN << endl;
 			configure(currentFEN); //on board configuration
+            pos.from_fen(getStartFEN(), false, Threads.main_thread()); // The root position
             
             if (searching && clockMode==INFINITE) {
                 // stop search as a new board position has occurred
@@ -608,7 +660,7 @@ void loop(const string& args) {
 			Move move=isPlayable(currentFEN);
 			cout<< "-------------------------Move:" << move <<  endl;
 //            if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && computerPlays==WHITE) )
-            if( move!=MOVE_NONE || (!currentFEN.compare(StartFEN) && ((computerPlays==WHITE) || clockMode==INFINITE)) )
+            if( move!=MOVE_NONE || (!currentFEN.compare(getStartFEN()) && ((computerPlays==WHITE) || clockMode==INFINITE)) )
     
 			{
 				//if(searching) UCI::loop("stop"); //stop the current search
@@ -622,7 +674,7 @@ void loop(const string& args) {
                     searchStartTime=Time::now(); //needed if player undoes a move
                 }
                 
-				pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
+				pos.from_fen(getStartFEN(), false, Threads.main_thread()); // The root position
                 MoveList<LEGAL> ml(pos); //the legal move list
 
 				// Keep track of position keys along the setup moves (from start position to the
@@ -744,7 +796,7 @@ void loop(const string& args) {
 
             finishSearch:
             //set the FEN we are waiting ofr on the board
-            pos.from_fen(StartFEN, false, Threads.main_thread()); // The root position
+            pos.from_fen(getStartFEN(), false, Threads.main_thread()); // The root position
             // Keep track of position keys along the setup moves (from start position to the
     		// position just before to start searching). Needed by repetition draw detection.
 			Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;

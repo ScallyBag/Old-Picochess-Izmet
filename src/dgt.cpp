@@ -58,9 +58,9 @@ deque<string> fenQueue;
 u_int MAX_FEN_QUEUE_SIZE = 3; 
 char* customStartFEN;
 
-enum PlayMode {ANALYSIS, GAME, BOOK, TRAINING} playMode;
+enum PlayMode {GAME, ANALYSIS, BOOK, TRAINING} playMode;
 
-enum ClockMode { INFINITE, FIXEDTIME, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL } clockMode;
+enum ClockMode {FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL } clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
 bool computerMoveFENReached=false, searching = false;
 string ponderHitFEN="";
@@ -145,6 +145,13 @@ string getDgtFEN(char tomove = 'w')
 	FEN[pos] = char(0);
 
 	return string(FEN);
+}
+
+string stripFen(string fen) {
+    istringstream fen_stream(fen);
+    string strippedFen;
+    fen_stream >> strippedFen;
+    return strippedFen;
 }
 
 /// Change UCI parameters with special positions on the board
@@ -248,19 +255,27 @@ void configure(string fen)
     if (fen =="rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  game", true, false); playMode=GAME; resetClock();}
 
     if (setupPosition) {
+        // Need only the raw position portion of fen
+        string strippedFen = stripFen(fen); 
+        
         // Search for both white and black kings
-        if (fen.find('K') != string::npos && fen.find('k') != string::npos) {
+        if (strippedFen.find('K') != string::npos && strippedFen.find('k') != string::npos) {
             // if white and black kings exist, see that the position has occurred twice in the last 3 FENs
             // If so, this is the new starting position!
             int matches = 0;
             for (deque<string>::iterator it = fenQueue.begin(); it!=fenQueue.end(); ++it) {
                 if (fen == *it) { 
                     ++matches;
+                    
+                    //Analyze stripped fen to see if the computer moves as white or black
+                    string prevMatchingFen = stripFen(*it);
+                    //Computer plays white if previous matching FEN has NO white king
+                    if (prevMatchingFen.find('K') !=string::npos) computerPlays=WHITE;
+                    else computerPlays=BLACK;                    
                 }
             }
             if (matches>=1) {
                // match
-//                StartFEN= const_cast<char *> (fen.c_str());
                 setupPosition = false;
                 customPosition = true;
                 customStartFEN = const_cast<char *> (fen.c_str());
@@ -499,9 +514,6 @@ void* infiniteAnalysis(void *) {
 
     while (true) {
         if (clockMode == INFINITE && searching) {
-//            PolyglotBook* book;
-//            book = (PolyglotBook *) pbook;
-            //            book = (PolyglotBook) &pbook;
             sleep(2);
 
 //            Move bookMove = book->probe(Search::RootPos, Options["Book File"], Options["Best Book Move"]);

@@ -88,9 +88,12 @@ char* getStartFEN() {
             
     if (customPosition) {
         fen = customStartFEN;
+        cout<<"custom Start FEN: "<< fen << endl;
+
     }
     else {
         fen = const_cast<char *> (StartFEN);
+        cout << "Regular Start FEN" << fen << endl;
     }
     return fen;
 
@@ -270,7 +273,7 @@ void configure(string fen)
                     //Analyze stripped fen to see if the computer moves as white or black
                     string prevMatchingFen = stripFen(*it);
                     //Computer plays white if previous matching FEN has NO white king
-                    if (prevMatchingFen.find('K') !=string::npos) computerPlays=WHITE;
+                    if (prevMatchingFen.find('K') == string::npos) computerPlays=WHITE;
                     else computerPlays=BLACK;                    
                 }
             }
@@ -516,11 +519,6 @@ void* infiniteAnalysis(void *) {
         if (clockMode == INFINITE && searching) {
             sleep(2);
 
-//            Move bookMove = book->probe(Search::RootPos, Options["Book File"], Options["Best Book Move"]);
-//            if (bookMove && Options["OwnBook"]) {
-//                display_top_book_moves(*book, Search::RootPos, 3);
-//            } else {
-
             string uci_score = Search::UciPvDgt.score;
 
             // Remove the words 'cp' from output and replace with just 'p' (centipawns) to save clock space
@@ -546,6 +544,7 @@ void* infiniteAnalysis(void *) {
 
             dgtnixPrintMessageOnClock(depth_str.c_str(), false, false);
 
+// Display NPS?
 //            stringstream s_nps;
 //            s_nps << (int) Search::UciPvDgt.nps / 1000;
 //            string nps = s_nps.str();
@@ -572,7 +571,7 @@ bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or fa
 void loop(const string& args) {
 	// Initialization
 	computerPlays=BLACK;
-	fixedTime = 5000; clockMode=INFINITE; resetClock(); //search defaults to 5 seconds per move
+	fixedTime = 5000; clockMode=INFINITE; playMode= ANALYSIS; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime=Time::now();;

@@ -534,15 +534,15 @@ while 1:
             sys.stdout.write("command:")
             c=sys.stdin.readline()
             c=c.strip('\n')
-            if c  == "start_pos":
+            if c  == "start":
                      c ="Rh1, Ng1, Bf1, Ke1, Qd1, Bc1, Nb1, Ra1,"
                      c +="Ph2, Pg2, Pf2, Pe2, Pd2, Pc2, Pb2, Pa2,"
                      c +="rh8, ng8, bf8, ke8, qd8, bc8, nb8, ra8,"
                      c +="ph7, pg7, pf7, pe7, pd7, pc7, pb7, pa7"
-            elif c == "setup_pos":
+            elif c == "setup":
                     c = "Qa1,Qh1"
-            elif c == "custom_pos":
-                    c = "Kg2, kg7,Pg3,ta1,th1,tg2,Kg2"
+            elif c == "custom":
+                    c = "Kg2, kg7,Pg3,ta1,th1"
             for command in c.split(','):
                 if clockon == "end":
                     sys.exit(1)

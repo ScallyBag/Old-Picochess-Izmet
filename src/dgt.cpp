@@ -157,6 +157,20 @@ string stripFen(string fen) {
     return strippedFen;
 }
 
+void clearGame() {
+    UCI::loop("stop"); //stop the current search
+    ponderHitFEN=="";
+    computerMoveFENReached=false;
+    searching=false;
+    game.clear(); //reset the game
+    TT.clear();
+    resetClock();
+    if(clockMode==BLITZ || clockMode==BLITZFISCHER)
+        printTimeOnClock(wTime,bTime,true,true);
+    else
+        dgtnixPrintMessageOnClock("newgam", false, false);
+}
+
 /// Change UCI parameters with special positions on the board
 void configure(string fen)
 {
@@ -283,6 +297,7 @@ void configure(string fen)
                 customPosition = true;
                 customStartFEN = const_cast<char *> (fen.c_str());
                 cout << "Custom_start_fen: " << customStartFEN;
+                clearGame();
             }
 
         } 
@@ -334,17 +349,7 @@ void configure(string fen)
 	//new game
 	if(fen==StartFEN && !game.empty())
 	{
-		UCI::loop("stop"); //stop the current search
-        ponderHitFEN=="";
-        computerMoveFENReached=false;
-        searching=false;
-		game.clear(); //reset the game
-		TT.clear();
-        resetClock();
-        if(clockMode==BLITZ || clockMode==BLITZFISCHER)
-            printTimeOnClock(wTime,bTime,true,true);
-        else
-            dgtnixPrintMessageOnClock("newgam", false, false);
+		clearGame();
 	}
 
 	//shutdown
@@ -620,10 +625,11 @@ void loop(const string& args) {
 
     pthread_t infiniteThread;
     pthread_create( &infiniteThread, NULL, infiniteAnalysis, (void*) NULL);
-    Position pos;
 
 	// Main DGT event loop
 	while (true) {
+        Position pos;
+//        cout << "Start of while true";
         sem_wait(&dgtnixEventSemaphore);
 //        cout<<"In event loop!"<<endl;
         string s = getDgtFEN();
@@ -649,6 +655,7 @@ void loop(const string& args) {
             
 			cout << currentFEN << endl;
 			configure(currentFEN); //on board configuration
+
             pos.from_fen(getStartFEN(), false, Threads.main_thread()); // The root position
             
             if (searching && clockMode==INFINITE) {
@@ -685,12 +692,11 @@ void loop(const string& args) {
                     searchStartTime=Time::now(); //needed if player undoes a move
                 }
                 
-				pos.from_fen(getStartFEN(), false, Threads.main_thread()); // The root position
                 MoveList<LEGAL> ml(pos); //the legal move list
 
 				// Keep track of position keys along the setup moves (from start position to the
 				// position just before to start searching). Needed by repetition draw detection.
-				Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());;
+				Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
 
 				//Do all the game moves
 				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
@@ -790,6 +796,7 @@ void loop(const string& args) {
 
 		//Check for finished search
 		if (Search::Signals.stop == true && searching) {
+            cout << "Finished search";
 			searching = false;
             
             //update clock remaining time

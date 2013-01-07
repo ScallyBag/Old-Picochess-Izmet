@@ -88,12 +88,12 @@ char* getStartFEN() {
             
     if (customPosition) {
         fen = customStartFEN;
-        cout<<"custom Start FEN: "<< fen << endl;
+//        cout<<"custom Start FEN: "<< fen << endl;
 
     }
     else {
         fen = const_cast<char *> (StartFEN);
-        cout << "Regular Start FEN" << fen << endl;
+//        cout << "Regular Start FEN" << fen << endl;
     }
     return fen;
 
@@ -169,6 +169,37 @@ void clearGame() {
         printTimeOnClock(wTime,bTime,true,true);
     else
         dgtnixPrintMessageOnClock("newgam", false, false);
+    }
+
+string computeCastlingRights(string fen) {
+    Position customPos(fen, false, Threads.main_thread());
+    string outputFEN;
+    bool canCastle = false;
+
+    if (customPos.piece_on(SQ_E1) == W_KING && customPos.piece_on(SQ_H1) == W_ROOK) {
+        canCastle = true;
+        outputFEN.append("K");
+    }
+
+    if (customPos.piece_on(SQ_E1) == W_KING && customPos.piece_on(SQ_A1) == W_ROOK) {
+        canCastle = true;
+        outputFEN.append("Q");
+    }
+
+    if (customPos.piece_on(SQ_E8) == B_KING && customPos.piece_on(SQ_H8) == B_ROOK) {
+        canCastle = true;
+        outputFEN.append("k");
+    }
+
+    if (customPos.piece_on(SQ_E8) == B_KING && customPos.piece_on(SQ_A8) == B_ROOK) {
+        canCastle = true;
+        outputFEN.append("q");
+    }
+
+    if (!canCastle) outputFEN.append("-");
+    
+    return outputFEN;
+
 }
 
 /// Change UCI parameters with special positions on the board
@@ -284,12 +315,20 @@ void configure(string fen)
                 if (fen == *it) { 
                     ++matches;
                     
-                    //Analyze stripped fen to see if the computer moves as white or black
-                    string prevMatchingFen = stripFen(*it);
-                    //Computer plays white if previous matching FEN has NO white king
-                    if (prevMatchingFen.find('K') == string::npos) computerPlays=WHITE;
-                    else computerPlays=BLACK;                    
+                                    
                 }
+//                else {
+//                    // Read NON matching FEN to see which piece was removed
+//                    //Analyze stripped fen to see if the computer moves as white or black
+//                    string prevMatchingFen = stripFen(*it);
+//                    
+//                    cout << "prev matching fen K: "<<prevMatchingFen.find('k') << "\n";
+//                    cout << "full prev fen: "<<prevMatchingFen << "\n";
+//                    //Computer plays white if previous matching FEN has a black king
+//                    if (prevMatchingFen.find('k') != string::npos) computerPlays=WHITE;
+//                    else computerPlays=BLACK;    
+//                    
+//                }
             }
             if (matches>=1) {
                // match
@@ -297,38 +336,16 @@ void configure(string fen)
                 customPosition = true;
                 string testFen = string(strippedFen);
                 testFen.append(" w ");
-                Position customPos(strippedFen, false, Threads.main_thread());
                 
-                bool canCastle = false;
-                
-                if (customPos.can_castle(WHITE_OO)==1) {
-                    canCastle = true;
-                    testFen.append("K");
-                }
-                
-                if (customPos.can_castle(WHITE_OOO)==1) {
-                    canCastle = true;
-                    testFen.append("Q");
-                }
-                
-                if (customPos.can_castle(BLACK_OO)==1) {
-                    canCastle = true;
-                    testFen.append("k");
-                }
-                
-                if (customPos.can_castle(BLACK_OOO)==1) {
-                    canCastle = true;
-                    testFen.append("q");
-                }
-                
-                if (!canCastle) testFen.append("-");
+                testFen.append(computeCastlingRights(strippedFen));
                     
                 testFen.append(" 0 1");
 
                 customStartFEN = new char[strlen(testFen.c_str())];
                 strcpy(customStartFEN, testFen.c_str());
-                cout << "Custom_start_fen: " << customStartFEN;
+//                cout << "Custom_start_fen: " << customStartFEN;
                 clearGame();
+                if (computerPlays==WHITE) computerMoveFENReached = true;
             }
 
         } 
@@ -338,7 +355,7 @@ void configure(string fen)
     
     // Setup Custom position
     // White queens on a1 and h1
-    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); computerPlays=WHITE; setupPosition=true; resetClock();}
+    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=BLACK; resetClock();}
     
     //choose opening book
     typedef map<string, string> BookMap; 

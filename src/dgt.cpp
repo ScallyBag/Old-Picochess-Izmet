@@ -62,7 +62,8 @@ enum PlayMode {GAME, ANALYSIS, BOOK, TRAINING} playMode;
 
 enum ClockMode {FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL } clockMode;
 int fixedTime, blitzTime, fischerInc, wTime, bTime;
-bool computerMoveFENReached=false, searching = false;
+bool computerMoveFENReached=false;
+bool searching = false;
 string ponderHitFEN="";
 
 void addToFenQueue(string fen) {
@@ -205,6 +206,7 @@ string computeCastlingRights(string fen) {
 /// Change UCI parameters with special positions on the board
 void configure(string fen)
 {
+    cout << "Fen received: "<< fen;
 	//set skill level
     static string skillFENs[]={
     "rnbqkbnr/pppppppp/q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -317,45 +319,44 @@ void configure(string fen)
                     
                                     
                 }
-//                else {
-//                    // Read NON matching FEN to see which piece was removed
-//                    //Analyze stripped fen to see if the computer moves as white or black
-//                    string prevMatchingFen = stripFen(*it);
-//                    
-//                    cout << "prev matching fen K: "<<prevMatchingFen.find('k') << "\n";
-//                    cout << "full prev fen: "<<prevMatchingFen << "\n";
-//                    //Computer plays white if previous matching FEN has a black king
-//                    if (prevMatchingFen.find('k') != string::npos) computerPlays=WHITE;
-//                    else computerPlays=BLACK;    
-//                    
-//                }
+                else {
+                    // Read NON matching FEN to see which piece was removed
+                    //Analyze stripped fen to see if the computer moves as white or black
+                    string prevMatchingFen = stripFen(*it);
+
+                    //Play vs computer if removing a king
+                    // If not (main condition), then analysis mode is turned on
+                    if (prevMatchingFen.find('k') != string::npos && prevMatchingFen.find('K') != string::npos) {
+                        clockMode = INFINITE;
+                        playMode = ANALYSIS;
+                    } else {
+                        clockMode = FIXEDTIME;
+                        playMode = GAME;
+                    }
+
+                }
             }
             if (matches>=1) {
                // match
                 setupPosition = false;
                 customPosition = true;
                 string testFen = string(strippedFen);
-                testFen.append(" w ");
                 
-                testFen.append(computeCastlingRights(strippedFen));
-                    
+                if (computerPlays==BLACK) testFen.append(" w ");
+                else testFen.append(" b ");
+                
+                testFen.append(computeCastlingRights(strippedFen));    
                 testFen.append(" 0 1");
 
                 customStartFEN = new char[strlen(testFen.c_str())];
                 strcpy(customStartFEN, testFen.c_str());
-//                cout << "Custom_start_fen: " << customStartFEN;
                 clearGame();
-                if (computerPlays==WHITE) computerMoveFENReached = true;
             }
 
         } 
         
         addToFenQueue(fen);
     }
-    
-    // Setup Custom position
-    // White queens on a1 and h1
-    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=BLACK; resetClock();}
     
     //choose opening book
     typedef map<string, string> BookMap; 
@@ -382,13 +383,21 @@ void configure(string fen)
     	dgtnixPrintMessageOnClock(s.c_str(), true, false);      
     }
 
-	//board orientation
-	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1") 
+    //board orientation
+	if(fen=="RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1" || fen=="8/8/8/8/8/8/8/q6q w KQkq - 0 1" || fen=="Q6Q/8/8/8/8/8/8/8 w KQkq - 0 1") 
     { 
         dgtnixSetOption(DGTNIX_BOARD_ORIENTATION, boardReversed?DGTNIX_BOARD_ORIENTATION_CLOCKLEFT:DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
         boardReversed=!boardReversed;
         sem_post(&dgtnixEventSemaphore); //trigger new game start
     }
+    
+    // Setup Custom position - white to move
+    // White queens on a1 and h1
+    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=BLACK; resetClock();}
+    
+    // Setup Custom position - black to move
+    // Black queens on a8 and h8
+    if (fen =="q6q/8/8/8/8/8/8/8 w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=WHITE; resetClock();}
 
 	//set side to play (simply remove the king of the side you are playing and put it back on the board)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w KQkq - 0 1") { cout << "You play white"<< endl; computerPlays=BLACK; }
@@ -569,8 +578,12 @@ void display_top_book_moves(PolyglotBook& book, const Position& pos, const int n
 void* infiniteAnalysis(void *) {
 
     while (true) {
+//        cout <<"Infinite clock mode: "<< clockMode;
+//        cout <<"\n searching: "<<searching;
+//        cout <<"\n";
         if (clockMode == INFINITE && searching) {
             sleep(2);
+//            cout << "Infinite analysis!\n";
 
             string uci_score = Search::UciPvDgt.score;
 
@@ -655,7 +668,7 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic014", false, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock("pic016", false, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop("setoption name Hash value 512");
@@ -677,9 +690,7 @@ void loop(const string& args) {
 	// Main DGT event loop
 	while (true) {
         Position pos;
-//        cout << "Start of while true";
         sem_wait(&dgtnixEventSemaphore);
-//        cout<<"In event loop!"<<endl;
         string s = getDgtFEN();
         
         //Display time on clock

@@ -541,6 +541,9 @@ while 1:
                      c +="ph7, pg7, pf7, pe7, pd7, pc7, pb7, pa7"
             elif c == "setup":
                     c = "Qa1,Qh1"
+            elif c == "clear":
+                    board = initBoard()
+                    continue
             elif c == "custom":
                     c = "Kg2, kg7,Pg3,ta1,th1"
             for command in c.split(','):

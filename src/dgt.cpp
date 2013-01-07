@@ -295,7 +295,38 @@ void configure(string fen)
                // match
                 setupPosition = false;
                 customPosition = true;
-                customStartFEN = const_cast<char *> (fen.c_str());
+                string testFen = string(strippedFen);
+                testFen.append(" w ");
+                Position customPos(strippedFen, false, Threads.main_thread());
+                
+                bool canCastle = false;
+                
+                if (customPos.can_castle(WHITE_OO)==1) {
+                    canCastle = true;
+                    testFen.append("K");
+                }
+                
+                if (customPos.can_castle(WHITE_OOO)==1) {
+                    canCastle = true;
+                    testFen.append("Q");
+                }
+                
+                if (customPos.can_castle(BLACK_OO)==1) {
+                    canCastle = true;
+                    testFen.append("k");
+                }
+                
+                if (customPos.can_castle(BLACK_OOO)==1) {
+                    canCastle = true;
+                    testFen.append("q");
+                }
+                
+                if (!canCastle) testFen.append("-");
+                    
+                testFen.append(" 0 1");
+
+                customStartFEN = new char[strlen(testFen.c_str())];
+                strcpy(customStartFEN, testFen.c_str());
                 cout << "Custom_start_fen: " << customStartFEN;
                 clearGame();
             }
@@ -576,7 +607,7 @@ bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or fa
 void loop(const string& args) {
 	// Initialization
 	computerPlays=BLACK;
-	fixedTime = 5000; clockMode=INFINITE; playMode= ANALYSIS; resetClock(); //search defaults to 5 seconds per move
+	fixedTime = 5000; clockMode=FIXEDTIME; playMode= GAME; resetClock(); //search defaults to 5 seconds per move
 	Move playerMove=MOVE_NONE;
 	static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime=Time::now();;

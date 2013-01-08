@@ -396,11 +396,12 @@ void configure(string fen)
     
     // Setup Custom position - white to move
     // White queens on a1 and h1
-    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=BLACK; resetClock();}
+    // No beeps as it makes sounds for a FEN setup
+    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", false, false); setupPosition=true; computerPlays=BLACK; resetClock();}
     
     // Setup Custom position - black to move
     // Black queens on a8 and h8
-    if (fen =="q6q/8/8/8/8/8/8/8 w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=WHITE; resetClock();}
+    if (fen =="q6q/8/8/8/8/8/8/8 w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", false, false); setupPosition=true; computerPlays=WHITE; resetClock();}
 
 	//set side to play (simply remove the king of the side you are playing and put it back on the board)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w KQkq - 0 1") { cout << "You play white"<< endl; computerPlays=BLACK; }

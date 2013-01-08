@@ -298,7 +298,7 @@ void configure(string fen)
     // White queen on a5
     if (fen =="rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  book", true, false); playMode=BOOK; resetClock();}
     // White queen on b5
-    if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("analyz", false, false); playMode=ANALYSIS; clockMode = INFINITE; resetClock();}
+    if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("analyz", true, false); playMode=ANALYSIS; clockMode = INFINITE; resetClock();}
     // White queen on c5
     if (fen =="rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock(" train", true, false); playMode=TRAINING; clockMode = INFINITE; resetClock();}
     // White queen on d5
@@ -396,11 +396,11 @@ void configure(string fen)
     
     // Setup Custom position - white to move
     // White queens on a1 and h1
-    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", false, false); setupPosition=true; computerPlays=BLACK; resetClock();}
+    if (fen =="8/8/8/8/8/8/8/Q6Q w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=BLACK; resetClock();}
     
     // Setup Custom position - black to move
     // Black queens on a8 and h8
-    if (fen =="q6q/8/8/8/8/8/8/8 w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", false, false); setupPosition=true; computerPlays=WHITE; resetClock();}
+    if (fen =="q6q/8/8/8/8/8/8/8 w KQkq - 0 1") {dgtnixPrintMessageOnClock(" setup", true, false); setupPosition=true; computerPlays=WHITE; resetClock();}
 
 	//set side to play (simply remove the king of the side you are playing and put it back on the board)
 	if(fen=="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w KQkq - 0 1") { cout << "You play white"<< endl; computerPlays=BLACK; }
@@ -458,7 +458,7 @@ Move isPlayable(const string& _fen)
 			UCI::loop("stop"); //stop the current search
             ponderHitFEN="";
 			cout << "Rolling back to position" << pos.to_fen() << endl;
-			dgtnixPrintMessageOnClock(" undo ", false, false);
+			dgtnixPrintMessageOnClock(" undo ", true, false);
 			game.erase((rit+1).base(),game.end()); //delete the moves from the game
 			return MOVE_NONE;
 		}
@@ -663,7 +663,7 @@ void loop(const string& args) {
 	cout << "The board was found" << BoardDescriptor << endl;
 	sleep(3);
     dgtnixUpdate();
-    dgtnixPrintMessageOnClock("pic016", false, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock("pic016", true, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop("setoption name Hash value 512");

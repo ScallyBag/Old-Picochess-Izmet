@@ -590,29 +590,6 @@ void* infiniteAnalysis(void *) {
 //            cout << "Infinite analysis!\n";
 
             string uci_score = Search::UciPvDgt.score;
-            char sideWithAdvantage = ' ';
-
-//            cout << "Side to move: "<<Search::RootPos.side_to_move();
-
-            // In analysis mode, even if it is black to move, its treated as white to move due to analysis of previous root position
-            if (Search::RootPos.side_to_move()==WHITE) {
-                if (uci_score.find('-') != string::npos) {
-                    sideWithAdvantage = ' ';
-                }
-                else {
-                    sideWithAdvantage = 'b';
-                }
-            
-            }
-            else {
-                if (uci_score.find('-') != string::npos) {
-                    sideWithAdvantage = 'b';
-                }
-                else {
-                    sideWithAdvantage = ' ';
-                }
-                
-            }
             
             // Remove the words 'cp' from output and replace with just 'p' (centipawns) to save clock space
             if (uci_score[0] == 'c' && uci_score[1] == 'p') {
@@ -623,8 +600,10 @@ void* infiniteAnalysis(void *) {
                 uci_score.erase(1, 3);
             }
 
-            uci_score = sideWithAdvantage + uci_score;
-        
+            // Score is from perspective of side to move
+            replace(uci_score.begin(), uci_score.end(), '-', 'n'); //Replace minus sign with 'n' as minus sign is not available on DGT
+
+            
             fitStringToDgt(uci_score);
             dgtnixPrintMessageOnClock(uci_score.c_str(), false, false);
 

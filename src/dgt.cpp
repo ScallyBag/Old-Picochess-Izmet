@@ -296,13 +296,29 @@ void configure(string fen)
     
     // Select Game modes
     // White queen on a5
-    if (fen =="rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  book", true, false); playMode=BOOK; resetClock();}
+    if (fen =="rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+        dgtnixPrintMessageOnClock("  book", true, false); 
+        playMode=BOOK;
+        // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
+        if (clockMode==INFINITE) { 
+            clockMode=FIXEDTIME; 
+        }
+        resetClock();
+    }
     // White queen on b5
     if (fen =="rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("analyz", true, false); playMode=ANALYSIS; clockMode = INFINITE; resetClock();}
     // White queen on c5
     if (fen =="rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock(" train", true, false); playMode=TRAINING; clockMode = INFINITE; resetClock();}
     // White queen on d5
-    if (fen =="rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {dgtnixPrintMessageOnClock("  game", true, false); playMode=GAME; resetClock();}
+    if (fen =="rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+        dgtnixPrintMessageOnClock("  game", true, false); 
+        playMode=GAME; 
+        // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
+        if (clockMode==INFINITE) { 
+            clockMode=FIXEDTIME; 
+        }
+        resetClock();
+    }
 
     if (setupPosition) {
         // Need only the raw position portion of fen

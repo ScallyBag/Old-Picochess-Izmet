@@ -756,7 +756,7 @@ void loop(const string& args) {
 //                }
 //            }
 //            
-            if( move!=MOVE_NONE || (!currentFEN.compare(getStartFEN()) && ((computerPlays==WHITE) || clockMode==INFINITE)))
+            if( move!=MOVE_NONE || (!currentFEN.compare(getStartFEN()) && (computerPlays==WHITE || clockMode==INFINITE )))
 			{
 				//if(searching) UCI::loop("stop"); //stop the current search
 				playerMove=move;

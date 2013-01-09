@@ -46,6 +46,7 @@ namespace Search {
   Color RootColor;
   Time::point SearchTime;
   StateStackPtr SetupStates;
+  Uci_PV_DGT UciPvDgt;
 }
 
 using std::string;
@@ -1533,15 +1534,27 @@ split_point_start: // At split points actual search starts from here
 
         if (s.rdbuf()->in_avail()) // Not at first line
             s << "\n";
-
+        
+        string score = (i == PVIdx ? score_to_uci(v, alpha, beta) : score_to_uci(v));
+        
         s << "info depth " << d
           << " seldepth "  << selDepth
-          << " score "     << (i == PVIdx ? score_to_uci(v, alpha, beta) : score_to_uci(v))
+          << " score "     << score
           << " nodes "     << pos.nodes_searched()
           << " nps "       << pos.nodes_searched() * 1000 / elaspsed
           << " time "      << elaspsed
           << " multipv "   << i + 1
           << " pv";
+        
+        UciPvDgt.depth = d;
+        UciPvDgt.seldepth = selDepth;
+        // Dont report alpha/beta score
+        UciPvDgt.score = score_to_uci(v);
+        UciPvDgt.nodes = pos.nodes_searched();
+        UciPvDgt.nps = pos.nodes_searched() * 1000 / elaspsed;
+        UciPvDgt.elapsed = elaspsed;
+        UciPvDgt.multipv = i + 1;
+        
 
         for (size_t j = 0; RootMoves[i].pv[j] != MOVE_NONE; j++)
             s <<  " " << move_to_uci(RootMoves[i].pv[j], pos.is_chess960());

@@ -32,6 +32,18 @@
 struct SplitPoint;
 
 namespace Search {
+    
+    
+ struct Uci_PV_DGT {
+    int depth;
+    int seldepth;
+    std::string score;
+    int64_t nodes;
+    double nps;
+    Time::point elapsed;
+    size_t multipv;
+
+ };
 
 /// The Stack struct keeps track of the information we need to remember from
 /// nodes shallower and deeper in the tree during the search. Each search thread
@@ -106,6 +118,7 @@ extern StateStackPtr SetupStates;
 extern void init();
 extern size_t perft(Position& pos, Depth depth);
 extern void think();
+extern Uci_PV_DGT UciPvDgt;
 
 } // namespace Search
 

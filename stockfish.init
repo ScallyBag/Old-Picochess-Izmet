@@ -9,8 +9,12 @@ touch /var/lock/stockfish
 case "$1" in
   start)
     echo "Starting stockfish "
-    #nohup /home/miniand/git/Stockfish/src/stockfish dgt /dev/ttyUSB0 &
-    screen -dmUS sf /home/miniand/git/Stockfish/src/stockfish dgt /dev/ttyUSB0
+    if /usr/local/bin/pico_dgt_bt
+    then
+       screen -dmUS sf /home/miniand/git/Stockfish/src/stockfish dgt /dev/rfcomm0
+    else
+       screen -dmUS sf /home/miniand/git/Stockfish/src/stockfish dgt /dev/ttyUSB0
+    fi
     ;;
   stop)
     echo "Stopping stockfish"

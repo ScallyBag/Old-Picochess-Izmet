@@ -210,6 +210,9 @@ static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* This mutex is used tu ensure we have recieved a clock ack message */
 static pthread_mutex_t clock_ack_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* This mutex is used to ensure that multiple threads can send messages to the clock. */
+static pthread_mutex_t clock_send_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /**************************************/
 /* Intern function begins with _...   */
 /**************************************/
@@ -536,7 +539,9 @@ void dgtnixPrintMessageOnClock(const char * message, unsigned char beep, unsigne
     e=_characterToLcdCode(message[4]);
     f=_characterToLcdCode(message[5]); 
     
+    pthread_mutex_lock (&clock_send_mutex);
     _sendMessageToClock(a,b,c,d,e,f,beep,dots);
+    pthread_mutex_unlock (&clock_send_mutex);
 }
 
 /*

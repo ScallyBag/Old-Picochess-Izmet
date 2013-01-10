@@ -330,16 +330,14 @@ void configure(string fen)
             // If so, this is the new starting position!
             int matches = 0;
             for (deque<string>::iterator it = fenQueue.begin(); it!=fenQueue.end(); ++it) {
+//                cout <<" Fen queue contains: "<<*it<<"\n";
                 if (fen == *it) { 
-                    ++matches;
-                    
-                                    
+                    ++matches;                          
                 }
-                else {
+                else if (matches>=1) {
                     // Read NON matching FEN to see which piece was removed
                     //Analyze stripped fen to see if the computer moves as white or black
                     string prevMatchingFen = stripFen(*it);
-
                     //Play vs computer if removing a king
                     // If not (main condition), then analysis mode is turned on
                     if (prevMatchingFen.find('k') != string::npos && prevMatchingFen.find('K') != string::npos) {

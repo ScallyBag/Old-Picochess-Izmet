@@ -644,6 +644,47 @@ void* infiniteAnalysis(void *) {
 bool blink() { return (Time::now()/1000)%2; } //returns alternatively true or false every second
 
 
+string getPgn(vector<Move> g, Move move) {
+//    MoveList<LEGAL> ml(pos); //the legal move list
+    std::string pgn;
+    Position pos;
+    pos.from_fen(getStartFEN(), false, Threads.main_thread()); // The root position
+
+    // Keep track of position keys along the setup moves (from start position to the
+    // position just before to start searching). Needed by repetition draw detection.
+    Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+    int moveNum=0;
+    //Do all the game moves
+    for (vector<Move>::iterator it = g.begin(); it!=g.end(); ++it)
+    {
+        Move m = *it;
+        ++moveNum;
+        if (moveNum % 2 == 1) {
+            stringstream ss;
+            ss << moveNum;
+            pgn.append(ss.str());
+            pgn.append(". ");
+        }
+        pgn.append(move_to_san(pos, m));
+        pgn.append(" ");
+        SetupStates->push(StateInfo());
+        pos.do_move(m, SetupStates->top());
+    }
+    if (move!=MOVE_NONE) {
+        ++moveNum;
+        if (moveNum % 2 == 1) {
+            stringstream ss;
+            ss << moveNum;
+            pgn.append(ss.str());
+            pgn.append(". ");
+        }
+        pgn.append(move_to_san(pos, move));
+    }
+    
+    return pgn;
+}
+
+
 void loop(const string& args) {
 	// Initialization
 	computerPlays=BLACK;
@@ -745,7 +786,6 @@ void loop(const string& args) {
 			//Test if we reach a playable position in the current game
 			Move move=isPlayable(currentFEN);
 			cout<< "-------------------------Move:" << move <<  endl;
-
 //            // In book mode, try to present book moves during the player's turn
 //            if (move == MOVE_NONE && playMode==BOOK) {
 ////                cout << "Reached user book mode";
@@ -772,6 +812,8 @@ void loop(const string& args) {
 //            
             if( move!=MOVE_NONE || (!currentFEN.compare(getStartFEN()) && (computerPlays==WHITE || clockMode==INFINITE )))
 			{
+//                cout<< "PGN: \n"<< getPgn(game, move) <<"\n";
+
 				//if(searching) UCI::loop("stop"); //stop the current search
 				playerMove=move;
                 

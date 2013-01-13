@@ -653,6 +653,18 @@ string getPgn(vector<Move> g, Move move) {
     // Keep track of position keys along the setup moves (from start position to the
     // position just before to start searching). Needed by repetition draw detection.
     Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+    
+    // Write header
+    if (playMode==ANALYSIS) {
+        pgn.append("Analysis\n");
+    }
+    else if (computerPlays==WHITE) {
+        pgn.append("Stockfish - User\n");
+    }
+    else {
+        pgn.append("User - Stockfish\n");
+    }
+    
     int moveNum=0;
     //Do all the game moves
     for (vector<Move>::iterator it = g.begin(); it!=g.end(); ++it)
@@ -815,7 +827,7 @@ void loop(const string& args) {
 //                cout<< "PGN: \n"<< getPgn(game, move) <<"\n";
 
 				//if(searching) UCI::loop("stop"); //stop the current search
-				playerMove=move;
+		playerMove=move;
                 
                 //player has just moved : we need to update his remaining time
                 if(!game.empty())
@@ -827,50 +839,50 @@ void loop(const string& args) {
                 
                 MoveList<LEGAL> ml(pos); //the legal move list
 
-				// Keep track of position keys along the setup moves (from start position to the
-				// position just before to start searching). Needed by repetition draw detection.
-				Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+                // Keep track of position keys along the setup moves (from start position to the
+                // position just before to start searching). Needed by repetition draw detection.
+                Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
 
-				//Do all the game moves
-				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
-				{
-					SetupStates->push(StateInfo());
-					pos.do_move(*it, SetupStates->top());
-				}
-				if(move!=MOVE_NONE)
-				{
-					SetupStates->push(StateInfo());
-					pos.do_move(playerMove,SetupStates->top()); //Do the board move
-				}
+                //Do all the game moves
+                for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
+                {
+                        SetupStates->push(StateInfo());
+                        pos.do_move(*it, SetupStates->top());
+                }
+                if(move!=MOVE_NONE)
+                {
+                        SetupStates->push(StateInfo());
+                        pos.do_move(playerMove,SetupStates->top()); //Do the board move
+                }
                 
                 //Add fischer increment time to the computer's clock
                 if(computerPlays==WHITE) wTime+=fischerInc;
                 else bTime+=fischerInc;
       
 				//Check if we can find a move in the book
-				Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
-				if(bookMove && Options["OwnBook"])
-				{
-					UCI::loop("stop");
-                    searching=false;
-                    dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
-					//do the moves in the game
-					if(playerMove!=MOVE_NONE) game.push_back(playerMove);
+                            Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
+                            if(bookMove && Options["OwnBook"])
+                            {
+                                    UCI::loop("stop");
+                searching=false;
+                dgtnixPrintMessageOnClock("  book", false, false); //don't play immediately, wait for 1 second
+                                    //do the moves in the game
+                                    if(playerMove!=MOVE_NONE) game.push_back(playerMove);
 
-                    if (playMode!=GAME && playMode!=BOOK) {
+                if (playMode!=GAME && playMode!=BOOK) {
+                    display_top_book_moves(book, pos, 3);
+                }
+
+                else {
+                    printMoveOnClock(bookMove);
+                    game.push_back(bookMove);
+                    if (playMode==BOOK) {
+                        pos.do_move(bookMove, SetupStates->top());
+                        sleep(3);
                         display_top_book_moves(book, pos, 3);
                     }
 
-                    else {
-                        printMoveOnClock(bookMove);
-                        game.push_back(bookMove);
-                        if (playMode==BOOK) {
-                            pos.do_move(bookMove, SetupStates->top());
-                            sleep(3);
-                            display_top_book_moves(book, pos, 3);
-                        }
-                        
-                    }                            // Show computer book moves in non game mode
+                }                            // Show computer book moves in non game mode
                         // In book mode, only the the player's book moves are shown!
 
                     if(!Search::RootMoves.empty()) Search::RootMoves[0].pv[1]=MOVE_NONE; //No pondering

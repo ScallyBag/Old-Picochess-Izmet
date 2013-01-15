@@ -33,7 +33,8 @@ ifeq ($(UNAME),Haiku)
 	PREFIX=/boot/common
 endif
 BINDIR = $(PREFIX)/bin
-
+INSTALL_BOOKDIR = /opt/picochess/books
+BOOKDIR = ../books
 ### Built-in benchmark for pgo-builds
 PGOBENCH = ./$(EXE) bench 32 1 10 default depth
 
@@ -440,7 +441,8 @@ install:
 	-mkdir -p -m 755 $(BINDIR)
 	-cp $(EXE) $(BINDIR)
 	-strip $(BINDIR)/$(EXE)
-
+	-mkdir -p -m 755 $(INSTALL_BOOKDIR)
+	-cp $(BOOKDIR)/* $(INSTALL_BOOKDIR)
 clean:
 	$(RM) $(EXE) $(EXE).exe *.o .depend *~ core bench.txt *.gcda
 

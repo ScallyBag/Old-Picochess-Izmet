@@ -51,7 +51,7 @@ namespace DGT
   vector<Move> game;
   bool boardReversed = false;
   const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
-  const char* bookPath = "/home/miniand/git/Stockfish/books/";
+  const char* bookPath = "/opt/picochess/books/";
   bool setupPosition = false; // If a custom position is setup
   bool customPosition = false;
   deque<string> fenQueue;
@@ -907,61 +907,42 @@ namespace DGT
   } //returns alternatively true or false every second
 
   string
-  getPgn (vector<Move> g, Move move)
+  getPgn (Position pos, Move move, bool &wrotePGNHeader, int moveNum)
   {
     //    MoveList<LEGAL> ml(pos); //the legal move list
     std::string pgn;
-    Position pos;
-    pos.from_fen (getStartFEN (), false, Threads.main_thread ()); // The root position
 
     // Keep track of position keys along the setup moves (from start position to the
     // position just before to start searching). Needed by repetition draw detection.
     Search::StateStackPtr SetupStates = Search::StateStackPtr (new std::stack<StateInfo > ());
 
     // Write header
-    if (playMode == ANALYSIS)
+    if (!wrotePGNHeader)
       {
-        pgn.append ("Analysis\n");
-      }
-    else if (computerPlays == WHITE)
-      {
-        pgn.append ("Stockfish - User\n");
-      }
-    else
-      {
-        pgn.append ("User - Stockfish\n");
+        if (playMode == ANALYSIS)
+          {
+            pgn.append ("Analysis\n");
+          }
+        else if (computerPlays == WHITE)
+          {
+            pgn.append ("Stockfish - User\n");
+          }
+        else
+          {
+            pgn.append ("User - Stockfish\n");
+          }
+        wrotePGNHeader = true;
       }
 
-    int moveNum = 0;
-    //Do all the game moves
-    for (vector<Move>::iterator it = g.begin (); it != g.end (); ++it)
+    ++moveNum;
+    if (moveNum % 2 == 1)
       {
-        Move m = *it;
-        ++moveNum;
-        if (moveNum % 2 == 1)
-          {
-            stringstream ss;
-            ss << moveNum;
-            pgn.append (ss.str ());
-            pgn.append (". ");
-          }
-        pgn.append (move_to_san (pos, m));
-        pgn.append (" ");
-        SetupStates->push (StateInfo ());
-        pos.do_move (m, SetupStates->top ());
+        stringstream ss;
+        ss << moveNum;
+        pgn.append (ss.str ());
+        pgn.append (". ");
       }
-    if (move != MOVE_NONE)
-      {
-        ++moveNum;
-        if (moveNum % 2 == 1)
-          {
-            stringstream ss;
-            ss << moveNum;
-            pgn.append (ss.str ());
-            pgn.append (". ");
-          }
-        pgn.append (move_to_san (pos, move));
-      }
+    pgn.append (move_to_san (pos, move));
 
     return pgn;
   }
@@ -1026,6 +1007,8 @@ namespace DGT
 
     pthread_t infiniteThread;
     pthread_create (&infiniteThread, NULL, infiniteAnalysis, (void*) NULL);
+
+//    bool wrotePGNHeader = false;
 
     // Main DGT event loop
     while (true)
@@ -1104,7 +1087,7 @@ namespace DGT
             //            
             if (move != MOVE_NONE || (!currentFEN.compare (getStartFEN ()) && (computerPlays == WHITE || clockMode == INFINITE)))
               {
-                //                cout<< "PGN: \n"<< getPgn(game, move) <<"\n";
+//                cout<< "PGN: \n"<< getPgn(game, move, &wrotePGNHeader, game.size ()) <<"\n";
 
                 //if(searching) UCI::loop("stop"); //stop the current search
                 playerMove = move;
@@ -1126,12 +1109,19 @@ namespace DGT
                 //Do all the game moves
                 for (vector<Move>::iterator it = game.begin (); it != game.end (); ++it)
                   {
+//                    if (*it == game.back ())
+//                      {
+//                        Move m = *it;
+////                        cout<< "PGN: \n"<< getPgn( pos, m, wrotePGNHeader, SetupStates->top().pliesFromNull) <<"\n";           
+//                      }
                     SetupStates->push (StateInfo ());
                     pos.do_move (*it, SetupStates->top ());
+                    
                   }
                 if (move != MOVE_NONE)
                   {
                     SetupStates->push (StateInfo ());
+//                    cout<< "PGN: \n"<< getPgn( pos, playerMove, wrotePGNHeader, SetupStates->top().pliesFromNull) <<"\n";
                     pos.do_move (playerMove, SetupStates->top ()); //Do the board move
                   }
 

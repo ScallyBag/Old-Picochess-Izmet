@@ -19,6 +19,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -49,6 +50,9 @@ namespace DGT
   Search::LimitsType limits, resetLimits;
   Color computerPlays;
   vector<Move> game;
+  
+  ofstream pgnFile;
+  int plyCount = 0;
   bool boardReversed = false;
   const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
   const char* bookPath = "/opt/picochess/books/";
@@ -115,7 +119,6 @@ namespace DGT
       {
         fen = customStartFEN;
         //        cout<<"custom Start FEN: "<< fen << endl;
-
       }
     else
       {
@@ -172,7 +175,7 @@ namespace DGT
     FEN[pos++] = ' ';
     FEN[pos++] = tomove; // side to move
     FEN[pos++] = ' ';
-    // possible castelings
+    // possible castlings
     FEN[pos++] = 'K';
     FEN[pos++] = 'Q';
     FEN[pos++] = 'k';
@@ -213,6 +216,8 @@ namespace DGT
       printTimeOnClock (wTime, bTime, true, true);
     else
       dgtnixPrintMessageOnClock ("newgam", false, false);
+    plyCount = 0;
+    pgnFile << "\n";
   }
 
   string
@@ -907,7 +912,7 @@ namespace DGT
   } //returns alternatively true or false every second
 
   string
-  getPgn (Position pos, Move move, bool &wrotePGNHeader, int moveNum)
+  getPgn (Position pos, Move move)
   {
     //    MoveList<LEGAL> ml(pos); //the legal move list
     std::string pgn;
@@ -916,8 +921,8 @@ namespace DGT
     // position just before to start searching). Needed by repetition draw detection.
     Search::StateStackPtr SetupStates = Search::StateStackPtr (new std::stack<StateInfo > ());
 
-    // Write header
-    if (!wrotePGNHeader)
+    // Write header if its the first move
+    if (plyCount==0)
       {
         if (playMode == ANALYSIS)
           {
@@ -931,18 +936,24 @@ namespace DGT
           {
             pgn.append ("User - Stockfish\n");
           }
-        wrotePGNHeader = true;
       }
 
-    ++moveNum;
-    if (moveNum % 2 == 1)
+    ++plyCount;
+    if (plyCount % 2 == 1)
       {
         stringstream ss;
-        ss << moveNum;
+        ss << plyCount/2+1;
         pgn.append (ss.str ());
         pgn.append (". ");
       }
     pgn.append (move_to_san (pos, move));
+    pgn.append (" ");
+    
+    // New line after every ten moves 
+    if (plyCount % 20 == 0)
+      {
+        pgn.append("\n");
+      }
 
     return pgn;
   }
@@ -951,6 +962,7 @@ namespace DGT
   loop (const string& args)
   {
     // Initialization
+    pgnFile.open ("game.pgn");
     computerPlays = BLACK;
     fixedTime = 5000;
     clockMode = FIXEDTIME;
@@ -1008,8 +1020,6 @@ namespace DGT
     pthread_t infiniteThread;
     pthread_create (&infiniteThread, NULL, infiniteAnalysis, (void*) NULL);
 
-//    bool wrotePGNHeader = false;
-
     // Main DGT event loop
     while (true)
       {
@@ -1061,34 +1071,9 @@ namespace DGT
             //Test if we reach a playable position in the current game
             Move move = isPlayable (currentFEN);
             cout << "-------------------------Move:" << move << endl;
-            //            // In book mode, try to present book moves during the player's turn
-            //            if (move == MOVE_NONE && playMode==BOOK) {
-            ////                cout << "Reached user book mode";
-            //
-            //				// Keep track of position keys along the setup moves (from start position to the
-            //				// position just before to start searching). Needed by repetition draw detection.
-            //				Search::StateStackPtr SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
-            //
-            //				//Do all the game moves
-            //				for (vector<Move>::iterator it = game.begin(); it!=game.end(); ++it)
-            //				{
-            //					SetupStates->push(StateInfo());
-            //					pos.do_move(*it, SetupStates->top());
-            //				}
-            //                Move bookMove = book.probe(pos, Options["Book File"], Options["Best Book Move"]);
-            //				if(bookMove && Options["OwnBook"])
-            //				{
-            ////					UCI::loop("stop");
-            ////                    searching=false;
-            //                    dgtnixPrintMessageOnClock("u book", false, false); //don't play immediately, wait for 1 second
-            //                    display_top_book_moves(book, pos, 3);                    
-            //                }
-            //            }
-            //            
+           
             if (move != MOVE_NONE || (!currentFEN.compare (getStartFEN ()) && (computerPlays == WHITE || clockMode == INFINITE)))
               {
-//                cout<< "PGN: \n"<< getPgn(game, move, &wrotePGNHeader, game.size ()) <<"\n";
-
                 //if(searching) UCI::loop("stop"); //stop the current search
                 playerMove = move;
 
@@ -1109,19 +1094,19 @@ namespace DGT
                 //Do all the game moves
                 for (vector<Move>::iterator it = game.begin (); it != game.end (); ++it)
                   {
-//                    if (*it == game.back ())
-//                      {
-//                        Move m = *it;
-////                        cout<< "PGN: \n"<< getPgn( pos, m, wrotePGNHeader, SetupStates->top().pliesFromNull) <<"\n";           
-//                      }
                     SetupStates->push (StateInfo ());
+                    if (*it == game.back ())
+                      {
+                        Move m = *it;
+                        pgnFile << getPgn( pos, m);           
+                      }
                     pos.do_move (*it, SetupStates->top ());
                     
                   }
                 if (move != MOVE_NONE)
                   {
                     SetupStates->push (StateInfo ());
-//                    cout<< "PGN: \n"<< getPgn( pos, playerMove, wrotePGNHeader, SetupStates->top().pliesFromNull) <<"\n";
+                    pgnFile << getPgn( pos, playerMove);
                     pos.do_move (playerMove, SetupStates->top ()); //Do the board move
                   }
 

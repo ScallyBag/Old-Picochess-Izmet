@@ -76,8 +76,11 @@ echo "          channel 1;" >> /etc/bluetooth/rfcomm.conf
 echo '          Comment "DGT Bluetooth Board";' >> /etc/bluetooth/rfcomm.conf
 echo "        }" >> /etc/bluetooth/rfcomm.conf
 
-##############################################################
-### Finally restart bluetooth to get the new rfcomm device ###
-##############################################################
-/usr/bin/rfcomm connect ${BT_DONGLE} ${DGT_BOARD_ADDR} 1
+###################################################
+### Finally have bluetooth bind all new devices ###
+###################################################
+#/usr/bin/rfcomm connect ${BT_DONGLE} ${DGT_BOARD_ADDR} 1
+/usr/bin/rfcomm bind all
+sleep 2
+
 exit 0

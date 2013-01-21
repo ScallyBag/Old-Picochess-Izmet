@@ -1,6 +1,7 @@
 /* dgtnix, a POSIX driver for the Digital Game Timer chess board and clock
    Copyright (C) 2006 Pierre Boulenguez
                  2012 Jean-Francois Romang
+                 2012-2013 Shivkumar Shivaji
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
    as published by the Free Software Foundation; either version 2
@@ -633,6 +634,41 @@ static int _closeDescriptor(int *descriptor)
   return 0;
 }
 
+int extractBit (unsigned char data, int bitPosition) {
+    return (data >> bitPosition) & 0x01;
+}
+
+// TODO: Detect bit order based on machine endianness
+void processClockBits (unsigned char data) {    
+    
+    int first = extractBit(data, 0);
+    int second = extractBit(data, 1);
+    int third = extractBit(data, 2);
+      
+    // Detect clock buttons from left most button
+    if (first == 1 && second == 0 && third == 0) {
+        _debug("Clock button #1 pressed\n");
+    }
+    else if (first == 0 && second == 0 && third == 1) {
+        _debug("Clock button #2 pressed\n");
+    }
+    else if (first == 1 && second == 1 && third == 0) {
+        _debug("Clock button #3 pressed\n");
+    }
+    else if (first == 0 && second == 1 && third == 0) {
+        _debug("Clock button #4 pressed\n");
+    }
+    else if (first == 1 && second == 0 && third == 1) {
+        _debug("Clock button #5 pressed\n");
+    }
+/*
+    else {
+        _debug("No clock button pressed\n");
+    }
+*/
+    
+}
+
 /* 
  *  Manage the reception of the BWTIME message 
  *  function called only by _readMessageFromBoard()
@@ -646,17 +682,20 @@ static void _bwtimeReceived(unsigned char buffer[7])
 {
   int j;
   
-  /* Check if we have a clock ack message */
+   /* Check if we have a clock ack message */
   if( ((buffer[3]&0x0f) == 0x0a) || ((buffer[6]&0x0f) == 0x0a) )
   {
-    //clock ack message
+    processClockBits(buffer[5]);
+    processClockBits(buffer[6]);
+     //clock ack message
     _debug("clock ACK received\n");
     pthread_mutex_unlock (&clock_ack_mutex);
     return;
   }
-  
+    
   for (j = 0; j < 6; j++)
-    buffer[j] = (buffer[ j] >> 4) * 10 + (buffer[ j] & 15);
+    buffer[j] = (buffer[ j] >> 4) * 10 + (buffer[ j] & 15); 
+  
   if( ((buffer[0] & 15)==8) && (buffer[1] ==0) && ( buffer[2] ==0))
     g_btime = 0;
   else

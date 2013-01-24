@@ -721,7 +721,11 @@ namespace DGT
             cout << "Rolling back to position" << pos.to_fen () << endl;
             dgtnixPrintMessageOnClock (" undo ", true, false);
             game.erase ((rit + 1).base (), game.end ()); //delete the moves from the game
-            return MOVE_NONE;
+            if (clockMode == INFINITE) {
+                return MOVE_NULL;
+            } else {
+                return MOVE_NONE;
+            }
           }
       }
 
@@ -1075,6 +1079,12 @@ namespace DGT
            
             if (move != MOVE_NONE || (!currentFEN.compare (getStartFEN ()) && (computerPlays == WHITE || clockMode == INFINITE)))
               {
+                if (move == MOVE_NULL && clockMode == INFINITE)
+                  {
+                    // To support UNDO move operation in infinite analysis mode
+                    move = MOVE_NONE;  
+                  }
+                
                 //if(searching) UCI::loop("stop"); //stop the current search
                 playerMove = move;
 

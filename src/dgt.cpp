@@ -1126,8 +1126,8 @@ namespace DGT
                 if (move != MOVE_NONE)
                   {
                     SetupStates->push (StateInfo ());
-                    if (clockMode==INFINITE && !Search::UciPvDgt.score.empty ()) {
-                        pgnFile << " { "<< Search::UciPvDgt.score<< " } ";
+                    if (!Search::UciPvDgt.score.empty ()) {
+                        pgnFile << " { "<< Search::UciPvDgt.score<< " depth "<<Search::UciPvDgt.depth<< " } ";
                       }
                     pgnFile << getPgn( pos, playerMove);
                     pgnFile.flush();

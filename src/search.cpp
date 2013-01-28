@@ -1549,6 +1549,12 @@ split_point_start: // At split points actual search starts from here
         UciPvDgt.depth = d;
         UciPvDgt.seldepth = selDepth;
         // Dont report alpha/beta score
+        
+        // Convert score to from white's perspective
+        if (Search::RootColor == BLACK) {
+            v*=-1;
+        }
+        
         UciPvDgt.score = score_to_uci(v);
         UciPvDgt.nodes = pos.nodes_searched();
         UciPvDgt.nps = pos.nodes_searched() * 1000 / elaspsed;

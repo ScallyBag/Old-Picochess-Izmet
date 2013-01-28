@@ -54,6 +54,7 @@ namespace DGT
   
   ofstream pgnFile;
   int plyCount = 0;
+  bool rewritePGN = false;
   bool boardReversed = false;
   const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN string of the initial position, normal chess
   const char* bookPath = "/opt/picochess/books/";
@@ -720,6 +721,9 @@ namespace DGT
             ponderHitFEN = "";
             cout << "Rolling back to position" << pos.to_fen () << endl;
             dgtnixPrintMessageOnClock (" undo ", true, false);
+            pgnFile << "\n";
+            rewritePGN = true;
+            plyCount = 0;
             game.erase ((rit + 1).base (), game.end ()); //delete the moves from the game
             if (clockMode == INFINITE) {
                 return MOVE_NULL;
@@ -883,7 +887,8 @@ namespace DGT
                 uci_score.erase (1, 3);
               }
 
-            // Score is from perspective of side to move
+            // Score is from white's perspective
+                        
             replace (uci_score.begin (), uci_score.end (), '-', 'n'); //Replace minus sign with 'n' as minus sign is not available on DGT
 
 
@@ -976,7 +981,6 @@ namespace DGT
     Move playerMove = MOVE_NONE;
     static PolyglotBook book; // Defined static to initialize the PRNG only once
     Time::point searchStartTime = Time::now ();
-    ;
     string computerMoveFEN = "";
 
     // DGT Board Initialization
@@ -1100,24 +1104,30 @@ namespace DGT
 
                 // Keep track of position keys along the setup moves (from start position to the
                 // position just before to start searching). Needed by repetition draw detection.
-                Search::StateStackPtr SetupStates = Search::StateStackPtr (new std::stack<StateInfo > ());
-
+                Search::StateStackPtr SetupStates = Search::StateStackPtr (new std::stack<StateInfo > ());                 
+                
                 //Do all the game moves
                 for (vector<Move>::iterator it = game.begin (); it != game.end (); ++it)
                   {
                     SetupStates->push (StateInfo ());
-                    if (*it == game.back ())
+                    // In INFINITE analysis/training mode, every move is a player move and thus there is no need to write
+                    // the move from the game move list
+                    if (rewritePGN || (*it == game.back () && clockMode!=INFINITE))
                       {
                         Move m = *it;
-                        pgnFile << getPgn( pos, m);           
+                        pgnFile << getPgn( pos, m);
+                        pgnFile.flush();
                       }
                     pos.do_move (*it, SetupStates->top ());
                     
                   }
+                if (rewritePGN) rewritePGN = false;
+                   
                 if (move != MOVE_NONE)
                   {
                     SetupStates->push (StateInfo ());
                     pgnFile << getPgn( pos, playerMove);
+                    pgnFile.flush();
                     pos.do_move (playerMove, SetupStates->top ()); //Do the board move
                   }
 

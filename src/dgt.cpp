@@ -1126,6 +1126,9 @@ namespace DGT
                 if (move != MOVE_NONE)
                   {
                     SetupStates->push (StateInfo ());
+                    if (clockMode==INFINITE && !Search::UciPvDgt.score.empty ()) {
+                        pgnFile << " { "<< Search::UciPvDgt.score<< " } ";
+                      }
                     pgnFile << getPgn( pos, playerMove);
                     pgnFile.flush();
                     pos.do_move (playerMove, SetupStates->top ()); //Do the board move

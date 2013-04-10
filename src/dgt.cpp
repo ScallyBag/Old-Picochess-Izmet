@@ -703,7 +703,7 @@ namespace DGT
       {
         StateInfo state;
         pos.do_move (ml.move (), state);
-        if (pos.to_fen ().find (fen) != string::npos)
+        if (pos.fen ().find (fen) != string::npos)
           return ml.move ();
         pos.undo_move (ml.move ());
       }
@@ -715,11 +715,11 @@ namespace DGT
       {
         pos.undo_move (*rit);
         if (pos.side_to_move () != computerPlays) continueSearch = false; //stop searching in the game when we reached a position where human has the move
-        if ((pos.to_fen ().find (fen) != string::npos) && (pos.side_to_move () != computerPlays || clockMode == INFINITE)) //we found a position that was played
+        if ((pos.fen ().find (fen) != string::npos) && (pos.side_to_move () != computerPlays || clockMode == INFINITE)) //we found a position that was played
           {
             UCI::loop ("stop"); //stop the current search
             ponderHitFEN = "";
-            cout << "Rolling back to position" << pos.to_fen () << endl;
+            cout << "Rolling back to position" << pos.fen() << endl;
             dgtnixPrintMessageOnClock (" undo ", true, false);
             pgnFile << "\n";
             rewritePGN = true;
@@ -1059,7 +1059,7 @@ namespace DGT
             cout << currentFEN << endl;
             configure (currentFEN); //on board configuration
 
-            pos.from_fen (getStartFEN (), false, Threads.main_thread ()); // The root position
+            pos.set(getStartFEN (), false, Threads.main_thread ()); // The root position
 
             if (searching && clockMode == INFINITE)
               {
@@ -1172,7 +1172,7 @@ namespace DGT
                   }
                   //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
                   //It does not detect stalemates
-                else if (pos.is_draw < true, true > ())
+                else if (pos.is_draw < true> ())
                   dgtnixPrintMessageOnClock ("  draw", true, false);
                   /*//Check if there is a single legal move
                   else if(ml.size()==1)
@@ -1205,14 +1205,14 @@ namespace DGT
                         limits.ponder = false;
                         ponderHitFEN = "";
                         cout << "launch serach!!" << endl;
-                        Threads.start_searching (pos, limits, vector<Move > (), SetupStates);
+                        Threads.start_thinking (pos, limits, vector<Move > (), SetupStates);
                       }
                     searching = true;
                   }
                 else //no move to play : we are mate or stalemate
                   {
                     cout << "mate of stalemate!!" << endl;
-                    if (pos.in_check ()) dgtnixPrintMessageOnClock ("  mate", true, false);
+                    if (pos.checkers()) dgtnixPrintMessageOnClock ("  mate", true, false);
                     else dgtnixPrintMessageOnClock ("stlmat", true, false);
                   }
               } // end if computerPlays == WHITE
@@ -1241,7 +1241,7 @@ namespace DGT
 
 finishSearch:
             //set the FEN we are waiting ofr on the board
-            pos.from_fen (getStartFEN (), false, Threads.main_thread ()); // The root position
+            pos.set(getStartFEN (), false, Threads.main_thread ()); // The root position
             // Keep track of position keys along the setup moves (from start position to the
             // position just before to start searching). Needed by repetition draw detection.
             Search::StateStackPtr SetupStates = Search::StateStackPtr (new std::stack<StateInfo > ());
@@ -1252,12 +1252,12 @@ finishSearch:
                 SetupStates->push (StateInfo ());
                 pos.do_move (*it, SetupStates->top ());
               }
-            computerMoveFEN = pos.to_fen ();
+            computerMoveFEN = pos.fen();
             computerMoveFENReached = false;
 
             MoveList<LEGAL> ml (pos); //the legal move list
             //check for draw
-            if (pos.is_draw < true, true > ())
+            if (pos.is_draw<true>())
               {
                 sleep (3);
                 dgtnixPrintMessageOnClock ("  draw", true, false);
@@ -1266,7 +1266,7 @@ finishSearch:
             else if (!ml.size ())
               {
                 sleep (3);
-                if (pos.in_check ()) dgtnixPrintMessageOnClock ("  mate", true, false);
+                if (pos.checkers()) dgtnixPrintMessageOnClock ("  mate", true, false);
                 else dgtnixPrintMessageOnClock ("stlmat", true, false);
               }
               //Ponder
@@ -1274,7 +1274,7 @@ finishSearch:
               {
                 game.push_back (Search::RootMoves[0].pv[1]);
                 pos.do_move (Search::RootMoves[0].pv[1], SetupStates->top ());
-                ponderHitFEN = pos.to_fen ();
+                ponderHitFEN = pos.fen();
                 //Launch ponder search
                 if (clockMode == BLITZ || clockMode == BLITZFISCHER)
                   {
@@ -1283,7 +1283,7 @@ finishSearch:
                     limits.inc[WHITE] = limits.inc[BLACK] = fischerInc;
                   }
                 limits.ponder = true;
-                Threads.start_searching (pos, limits, vector<Move > (), SetupStates);
+                Threads.start_thinking(pos, limits, vector<Move > (), SetupStates);
                 game.pop_back ();
               }
             else ponderHitFEN = "";

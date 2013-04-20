@@ -1514,6 +1514,8 @@ split_point_start: // At split points actual search starts from here
   string uci_pv(const Position& pos, int depth, Value alpha, Value beta) {
 
     std::stringstream s;
+    std::stringstream pv;
+
     Time::point elaspsed = Time::now() - SearchTime + 1;
     size_t uciPVSize = std::min((size_t)Options["MultiPV"], RootMoves.size());
     int selDepth = 0;
@@ -1560,12 +1562,17 @@ split_point_start: // At split points actual search starts from here
         UciPvDgt.nps = pos.nodes_searched() * 1000 / elaspsed;
         UciPvDgt.elapsed = elaspsed;
         UciPvDgt.multipv = i + 1;
-        
+
+        UciPvDgt.pv = " ";
 
         for (size_t j = 0; RootMoves[i].pv[j] != MOVE_NONE; j++)
-            s <<  " " << move_to_uci(RootMoves[i].pv[j], pos.is_chess960());
+          {
+            pv << " " << move_to_uci(RootMoves[i].pv[j], pos.is_chess960());
+//            s <<  " " << move_to_uci(RootMoves[i].pv[j], pos.is_chess960());
+          }
     }
-
+    s << pv.rdbuf();
+    UciPvDgt.pv = pv.str();
     return s.str();
   }
 

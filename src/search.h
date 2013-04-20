@@ -42,6 +42,7 @@ namespace Search {
     double nps;
     Time::point elapsed;
     size_t multipv;
+    std::string pv;
 
  };
 

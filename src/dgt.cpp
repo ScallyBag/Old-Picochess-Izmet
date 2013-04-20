@@ -445,51 +445,64 @@ namespace DGT
     if (fen == "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
         dgtnixPrintMessageOnClock ("f 32  ", true, false);
-        blitzTime = 180000;
-        fischerInc = 2000;
+        // The stockfish controls are all in milliseconds
+        // 3 minutes => 3 * 60 * 1000 to convert milliseconds to seconds
+        blitzTime = 3 * 60 * 1000;
+        fischerInc = 2 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f 35  ", true, false);
-        blitzTime = 180000;
-        fischerInc = 5000;
+        dgtnixPrintMessageOnClock ("f 42  ", true, false);
+        blitzTime = 4 * 60 * 1000;
+        fischerInc = 2 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f 45  ", true, false);
-        blitzTime = 240000;
-        fischerInc = 5000;
+        dgtnixPrintMessageOnClock ("f 53  ", true, false);
+        blitzTime = 5 * 60 * 1000;
+        fischerInc = 3 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f 51  ", true, false);
-        blitzTime = 300000;
-        fischerInc = 1000;
+        dgtnixPrintMessageOnClock ("f 55  ", true, false);
+        blitzTime = 5 * 60 * 1000;
+        fischerInc = 5 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
         dgtnixPrintMessageOnClock ("f155  ", true, false);
-        blitzTime = 900000;
-        fischerInc = 5000;
+        blitzTime = 15 * 60 * 1000;
+        fischerInc = 5 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f2010 ", true, false);
-        blitzTime = 1200000;
-        fischerInc = 10000;
+        dgtnixPrintMessageOnClock ("f2510 ", true, false);
+        blitzTime = 25 * 60 * 1000;
+        fischerInc = 10 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
+
+    // TODO: Fix FEN!
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+      {
+        dgtnixPrintMessageOnClock ("f9030 ", true, false);
+        blitzTime = 90 * 60 * 1000;
+        fischerInc = 30 * 1000;
+        clockMode = BLITZFISCHER;
+        resetClock ();
+      }
+
 
     // Select Game modes
     // White queen on a5
@@ -1127,7 +1140,7 @@ namespace DGT
                   {
                     SetupStates->push (StateInfo ());
                     if (!Search::UciPvDgt.score.empty ()) {
-                        pgnFile << " { "<< Search::UciPvDgt.score<< " depth "<<Search::UciPvDgt.depth<< " } ";
+                        pgnFile << " ( { "<< Search::UciPvDgt.score<< " depth "<<Search::UciPvDgt.depth<< " } "<<Search::UciPvDgt.pv << " ) ";
                       }
                     pgnFile << getPgn( pos, playerMove);
                     pgnFile.flush();

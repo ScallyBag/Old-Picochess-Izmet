@@ -66,7 +66,8 @@ namespace DGT
 
   volatile enum PlayMode
   {
-    GAME, ANALYSIS, BOOK, TRAINING
+      // Kibitz mode is game mode + commentary
+    GAME, ANALYSIS, BOOK, TRAINING, KIBITZ
   } playMode;
 
   volatile enum ClockMode
@@ -546,6 +547,19 @@ namespace DGT
         resetClock ();
       }
 
+    // White queen on e5
+    if (fen == "rnbqkbnr/pppppppp/8/4Q3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+      {
+        dgtnixPrintMessageOnClock ("chatty", true, false);
+        playMode = KIBITZ;
+        // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
+        if (clockMode == INFINITE)
+          {
+            clockMode = FIXEDTIME;
+          }
+        resetClock ();
+      }
+
     if (setupPosition)
       {
         // Need only the raw position portion of fen
@@ -882,9 +896,11 @@ namespace DGT
         //        cout <<"Infinite clock mode: "<< clockMode;
         //        cout <<"\n searching: "<<searching;
         //        cout <<"\n";
-        if (clockMode == INFINITE && searching)
+        if ((clockMode == INFINITE || playMode==KIBITZ) && searching)
           {
             sleep (2);
+            // Dont show analysis if there is no longer a search
+            if (!searching) continue;
             //            cout << "Infinite analysis!\n";
 
             string uci_score = Search::UciPvDgt.score;
@@ -900,10 +916,7 @@ namespace DGT
                 uci_score.erase (1, 3);
               }
 
-            // Score is from white's perspective
-                        
             replace (uci_score.begin (), uci_score.end (), '-', 'n'); //Replace minus sign with 'n' as minus sign is not available on DGT
-
 
             fitStringToDgt (uci_score);
             dgtnixPrintMessageOnClock (uci_score.c_str (), false, false);
@@ -914,8 +927,10 @@ namespace DGT
             depth_str = 'd' + depth_str; // Add a 'd' in front on depth to make output clear
             fitStringToDgt (depth_str);
 
-            dgtnixPrintMessageOnClock (depth_str.c_str (), false, false);
-
+            if (playMode !=KIBITZ) {
+                // Dont print depth while kibitzing
+                dgtnixPrintMessageOnClock (depth_str.c_str (), false, false);
+              }
             //Display the best move computer suggestion only in analysis mode
             if (playMode == ANALYSIS)
               {
@@ -1161,7 +1176,7 @@ namespace DGT
                     //do the moves in the game
                     if (playerMove != MOVE_NONE) game.push_back (playerMove);
 
-                    if (playMode != GAME && playMode != BOOK)
+                    if (playMode != GAME && playMode != BOOK && playMode != KIBITZ)
                       {
                         display_top_book_moves (book, pos, 3);
                       }
@@ -1283,7 +1298,7 @@ finishSearch:
                 else dgtnixPrintMessageOnClock ("stlmat", true, false);
               }
               //Ponder
-            else if ((playMode == GAME || playMode == BOOK) && !Search::RootMoves.empty () && Search::RootMoves[0].pv[1] != MOVE_NONE)
+            else if ((playMode == GAME || playMode == BOOK || playMode == KIBITZ) && !Search::RootMoves.empty () && Search::RootMoves[0].pv[1] != MOVE_NONE)
               {
                 game.push_back (Search::RootMoves[0].pv[1]);
                 pos.do_move (Search::RootMoves[0].pv[1], SetupStates->top ());

@@ -708,6 +708,20 @@ namespace DGT
       }
   }
 
+  /// Prints a move on the dgt clock
+
+  void
+  printMoveOnClock (Move move, unsigned char beep = true)
+  {
+    //print the move on the clock
+    string dgtMove = move_to_uci (move, false);
+    dgtMove.insert (2, 1, ' ');
+    if (dgtMove.length () < 6)
+      dgtMove.append (" ");
+    cout << '[' << dgtMove << ']' << endl;
+    dgtnixPrintMessageOnClock (dgtMove.c_str (), beep, false);
+  }
+
   /// Test if the given fen is playable in the current game.
   /// If true, return the move leading to this fen, else return MOVE_NONE
 
@@ -749,6 +763,8 @@ namespace DGT
             cout << "Rolling back to position" << pos.to_fen () << endl;
             dgtnixPrintMessageOnClock (" undo ", true, false);
             pgnFile << "\n";
+            sleep(1);
+            printMoveOnClock(*(rit+2).base());
             rewritePGN = true;
             plyCount = 0;
             game.erase ((rit + 1).base (), game.end ()); //delete the moves from the game
@@ -829,20 +845,6 @@ namespace DGT
         else if (wDots) dots |= DGTNIX_RIGHT_SEMICOLON; //hours:minutes mode
       }
     dgtnixPrintMessageOnClock (s.c_str (), false, dots);
-  }
-
-  /// Prints a move on the dgt clock
-
-  void
-  printMoveOnClock (Move move, unsigned char beep = true)
-  {
-    //print the move on the clock
-    string dgtMove = move_to_uci (move, false);
-    dgtMove.insert (2, 1, ' ');
-    if (dgtMove.length () < 6)
-      dgtMove.append (" ");
-    cout << '[' << dgtMove << ']' << endl;
-    dgtnixPrintMessageOnClock (dgtMove.c_str (), beep, false);
   }
 
   void*

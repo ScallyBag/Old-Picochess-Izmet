@@ -66,7 +66,8 @@ namespace DGT
 
   volatile enum PlayMode
   {
-    GAME, ANALYSIS, BOOK, TRAINING
+      // Kibitz mode is game mode + commentary
+    GAME, ANALYSIS, BOOK, TRAINING, KIBITZ
   } playMode;
 
   volatile enum ClockMode
@@ -445,51 +446,64 @@ namespace DGT
     if (fen == "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
         dgtnixPrintMessageOnClock ("f 32  ", true, false);
-        blitzTime = 180000;
-        fischerInc = 2000;
+        // The stockfish controls are all in milliseconds
+        // 3 minutes => 3 * 60 * 1000 to convert milliseconds to seconds
+        blitzTime = 3 * 60 * 1000;
+        fischerInc = 2 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f 35  ", true, false);
-        blitzTime = 180000;
-        fischerInc = 5000;
+        dgtnixPrintMessageOnClock ("f 42  ", true, false);
+        blitzTime = 4 * 60 * 1000;
+        fischerInc = 2 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f 45  ", true, false);
-        blitzTime = 240000;
-        fischerInc = 5000;
+        dgtnixPrintMessageOnClock ("f 53  ", true, false);
+        blitzTime = 5 * 60 * 1000;
+        fischerInc = 3 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f 51  ", true, false);
-        blitzTime = 300000;
-        fischerInc = 1000;
+        dgtnixPrintMessageOnClock ("f 55  ", true, false);
+        blitzTime = 5 * 60 * 1000;
+        fischerInc = 5 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
         dgtnixPrintMessageOnClock ("f155  ", true, false);
-        blitzTime = 900000;
-        fischerInc = 5000;
+        blitzTime = 15 * 60 * 1000;
+        fischerInc = 5 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
     if (fen == "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("f2010 ", true, false);
-        blitzTime = 1200000;
-        fischerInc = 10000;
+        dgtnixPrintMessageOnClock ("f2510 ", true, false);
+        blitzTime = 25 * 60 * 1000;
+        fischerInc = 10 * 1000;
         clockMode = BLITZFISCHER;
         resetClock ();
       }
+
+    // TODO: Fix FEN!
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+      {
+        dgtnixPrintMessageOnClock ("f9030 ", true, false);
+        blitzTime = 90 * 60 * 1000;
+        fischerInc = 30 * 1000;
+        clockMode = BLITZFISCHER;
+        resetClock ();
+      }
+
 
     // Select Game modes
     // White queen on a5
@@ -525,6 +539,19 @@ namespace DGT
       {
         dgtnixPrintMessageOnClock ("  game", true, false);
         playMode = GAME;
+        // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
+        if (clockMode == INFINITE)
+          {
+            clockMode = FIXEDTIME;
+          }
+        resetClock ();
+      }
+
+    // White queen on e5
+    if (fen == "rnbqkbnr/pppppppp/8/4Q3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+      {
+        dgtnixPrintMessageOnClock ("chatty", true, false);
+        playMode = KIBITZ;
         // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
         if (clockMode == INFINITE)
           {
@@ -681,6 +708,20 @@ namespace DGT
       }
   }
 
+  /// Prints a move on the dgt clock
+
+  void
+  printMoveOnClock (Move move, unsigned char beep = true)
+  {
+    //print the move on the clock
+    string dgtMove = move_to_uci (move, false);
+    dgtMove.insert (2, 1, ' ');
+    if (dgtMove.length () < 6)
+      dgtMove.append (" ");
+    cout << '[' << dgtMove << ']' << endl;
+    dgtnixPrintMessageOnClock (dgtMove.c_str (), beep, false);
+  }
+
   /// Test if the given fen is playable in the current game.
   /// If true, return the move leading to this fen, else return MOVE_NONE
 
@@ -722,6 +763,8 @@ namespace DGT
             cout << "Rolling back to position" << pos.fen() << endl;
             dgtnixPrintMessageOnClock (" undo ", true, false);
             pgnFile << "\n";
+            sleep(1);
+            printMoveOnClock(*(rit+2).base());
             rewritePGN = true;
             plyCount = 0;
             game.erase ((rit + 1).base (), game.end ()); //delete the moves from the game
@@ -804,20 +847,6 @@ namespace DGT
     dgtnixPrintMessageOnClock (s.c_str (), false, dots);
   }
 
-  /// Prints a move on the dgt clock
-
-  void
-  printMoveOnClock (Move move, unsigned char beep = true)
-  {
-    //print the move on the clock
-    string dgtMove = move_to_uci (move, false);
-    dgtMove.insert (2, 1, ' ');
-    if (dgtMove.length () < 6)
-      dgtMove.append (" ");
-    cout << '[' << dgtMove << ']' << endl;
-    dgtnixPrintMessageOnClock (dgtMove.c_str (), beep, false);
-  }
-
   void*
   wakeUpEverySecond (void*)
   {
@@ -869,9 +898,11 @@ namespace DGT
         //        cout <<"Infinite clock mode: "<< clockMode;
         //        cout <<"\n searching: "<<searching;
         //        cout <<"\n";
-        if (clockMode == INFINITE && searching)
+        if ((clockMode == INFINITE || playMode==KIBITZ) && searching)
           {
             sleep (2);
+            // Dont show analysis if there is no longer a search
+            if (!searching) continue;
             //            cout << "Infinite analysis!\n";
 
             string uci_score = Search::UciPvDgt.score;
@@ -887,10 +918,7 @@ namespace DGT
                 uci_score.erase (1, 3);
               }
 
-            // Score is from white's perspective
-                        
             replace (uci_score.begin (), uci_score.end (), '-', 'n'); //Replace minus sign with 'n' as minus sign is not available on DGT
-
 
             fitStringToDgt (uci_score);
             dgtnixPrintMessageOnClock (uci_score.c_str (), false, false);
@@ -901,8 +929,10 @@ namespace DGT
             depth_str = 'd' + depth_str; // Add a 'd' in front on depth to make output clear
             fitStringToDgt (depth_str);
 
-            dgtnixPrintMessageOnClock (depth_str.c_str (), false, false);
-
+            if (playMode !=KIBITZ) {
+                // Dont print depth while kibitzing
+                dgtnixPrintMessageOnClock (depth_str.c_str (), false, false);
+              }
             //Display the best move computer suggestion only in analysis mode
             if (playMode == ANALYSIS)
               {
@@ -1127,7 +1157,7 @@ namespace DGT
                   {
                     SetupStates->push (StateInfo ());
                     if (!Search::UciPvDgt.score.empty ()) {
-                        pgnFile << " { "<< Search::UciPvDgt.score<< " depth "<<Search::UciPvDgt.depth<< " } ";
+                        pgnFile << " ( { "<< Search::UciPvDgt.score<< " depth "<<Search::UciPvDgt.depth<< " } "<<Search::UciPvDgt.pv << " ) ";
                       }
                     pgnFile << getPgn( pos, playerMove);
                     pgnFile.flush();
@@ -1148,7 +1178,7 @@ namespace DGT
                     //do the moves in the game
                     if (playerMove != MOVE_NONE) game.push_back (playerMove);
 
-                    if (playMode != GAME && playMode != BOOK)
+                    if (playMode != GAME && playMode != BOOK && playMode != KIBITZ)
                       {
                         display_top_book_moves (book, pos, 3);
                       }
@@ -1270,7 +1300,7 @@ finishSearch:
                 else dgtnixPrintMessageOnClock ("stlmat", true, false);
               }
               //Ponder
-            else if ((playMode == GAME || playMode == BOOK) && !Search::RootMoves.empty () && Search::RootMoves[0].pv[1] != MOVE_NONE)
+            else if ((playMode == GAME || playMode == BOOK || playMode == KIBITZ) && !Search::RootMoves.empty () && Search::RootMoves[0].pv[1] != MOVE_NONE)
               {
                 game.push_back (Search::RootMoves[0].pv[1]);
                 pos.do_move (Search::RootMoves[0].pv[1], SetupStates->top ());

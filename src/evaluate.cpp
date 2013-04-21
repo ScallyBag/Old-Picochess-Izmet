@@ -171,6 +171,9 @@ namespace {
   // right to castle.
   const Value TrappedRookPenalty = Value(180);
 
+  // Penalty for bishop with pawns on the same coloured squares
+  const Score BishopPawnsPenalty = make_score(8, 12);
+
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
   // happen in Chess960 games.
@@ -581,6 +584,10 @@ Value do_evaluate(const Position& pos, Value& margin) {
                  && (PseudoAttacks[Piece][pos.king_square(Them)] & s)
                  && !more_than_one(BetweenBB[s][pos.king_square(Them)] & pos.pieces()))
                  score += BishopPinBonus;
+
+        // Penalty for bishop with same coloured pawns
+        if (Piece == BISHOP)
+            score -= BishopPawnsPenalty * ei.pi->pawns_on_same_color_squares(Us, s);
 
         // Bishop and knight outposts squares
         if (    (Piece == BISHOP || Piece == KNIGHT)

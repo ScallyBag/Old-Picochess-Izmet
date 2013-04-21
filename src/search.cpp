@@ -555,6 +555,24 @@ namespace {
     posKey = excludedMove ? pos.exclusion_key() : pos.key();
     tte = TT.probe(posKey);
     ttMove = RootNode ? RootMoves[PVIdx].pv[0] : tte ? tte->move() : MOVE_NONE;
+    // Try to probe symmetic board on pawnless positions
+    if(   tte == NULL 
+       && pos.pawn_key()== 0
+       && !pos.can_castle(WHITE)
+       && !pos.can_castle(BLACK) )
+    {
+      for(int symmetry=0; symmetry < 7 && tte == NULL ; symmetry++)
+      {
+        tte = TT.probe(pos.compute_key(symmetry));
+        if( tte && !RootNode )
+        { // Apply the symmetry to the move we found
+          ttMove = Move( ((tte->move()>>12)<<12) 
+                         ^ ((board_symmetries[symmetry][from_sq(tte->move())])<<6)
+                         ^ board_symmetries[symmetry][to_sq(tte->move())] );
+          
+        }
+      }
+    }
     ttValue = tte ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
 
     // At PV nodes we check for exact scores, while at non-PV nodes we check for

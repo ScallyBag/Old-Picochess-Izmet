@@ -1299,6 +1299,24 @@ Key Position::compute_key() const {
   return k;
 }
 
+/// Position::compute_key() computes the hash key of the position with the
+/// given symmetry
+
+Key Position::compute_key(int symmetry) const {
+  Key k = 0;
+
+  for (Bitboard b = pieces(); b; )
+  {
+      Square s = Square(board_symmetries[symmetry][pop_lsb(&b)]);
+      k ^= Zobrist::psq[color_of(piece_on(s))][type_of(piece_on(s))][s];
+  }
+
+  if (sideToMove == BLACK)
+      k ^= Zobrist::side;
+
+  return k;
+}
+
 
 /// Position::compute_pawn_key() computes the hash key of the position. The
 /// hash key is usually updated incrementally as moves are made and unmade,

@@ -166,6 +166,7 @@ public:
   Key exclusion_key() const;
   Key pawn_key() const;
   Key material_key() const;
+  Key compute_key(int symmetry) const;
 
   // Incremental piece-square evaluation
   Score psq_score() const;

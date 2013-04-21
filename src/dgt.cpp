@@ -1202,7 +1202,7 @@ namespace DGT
                   }
                   //Check for a draw : whether the position is drawn by material repetition, or the 50 moves rule.
                   //It does not detect stalemates
-                else if (pos.is_draw < true> ())
+                else if (pos.is_draw())
                   dgtnixPrintMessageOnClock ("  draw", true, false);
                   /*//Check if there is a single legal move
                   else if(ml.size()==1)
@@ -1287,7 +1287,7 @@ finishSearch:
 
             MoveList<LEGAL> ml (pos); //the legal move list
             //check for draw
-            if (pos.is_draw<true>())
+            if (pos.is_draw())
               {
                 sleep (3);
                 dgtnixPrintMessageOnClock ("  draw", true, false);

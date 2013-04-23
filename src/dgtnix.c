@@ -57,6 +57,7 @@
 #include "dgtnix.h"
 
 int dgtnix_errno=0;
+int clockButtonState;
 sem_t dgtnixEventSemaphore;
 
 /* The version of the dgtnix driver version as returned by the dgtnixQueryDriverVersion() function */
@@ -638,35 +639,46 @@ int extractBit (unsigned char data, int bitPosition) {
     return (data >> bitPosition) & 0x01;
 }
 
-// TODO: Detect bit order based on machine endianness
-void processClockBits (unsigned char data) {    
-    
+int getClockButtonState() {
+  int button = clockButtonState;
+  clockButtonState = 0;
+  return button;
+}
+
+// TODO: Detect bit order based on machine endianness. This code wont work on little endian machines.
+void processClockBits (unsigned char data) {
+
     int first = extractBit(data, 0);
     int second = extractBit(data, 1);
     int third = extractBit(data, 2);
-      
+
     // Detect clock buttons from left most button
     if (first == 1 && second == 0 && third == 0) {
         _debug("Clock button #1 pressed\n");
+        clockButtonState = 1;
     }
     else if (first == 0 && second == 0 && third == 1) {
         _debug("Clock button #2 pressed\n");
+        clockButtonState = 2;
     }
     else if (first == 1 && second == 1 && third == 0) {
         _debug("Clock button #3 pressed\n");
+        clockButtonState = 3;
     }
     else if (first == 0 && second == 1 && third == 0) {
         _debug("Clock button #4 pressed\n");
+        clockButtonState = 4;
     }
     else if (first == 1 && second == 0 && third == 1) {
         _debug("Clock button #5 pressed\n");
+        clockButtonState = 5;
     }
 /*
     else {
         _debug("No clock button pressed\n");
     }
 */
-    
+
 }
 
 /* 

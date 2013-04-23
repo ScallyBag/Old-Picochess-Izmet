@@ -292,6 +292,10 @@ extern "C" {
   /* Prints a 6 character string message on the DGT Clock */
   void dgtnixPrintMessageOnClock(const char *, unsigned char beep, unsigned char dots);
   void dgtnixUpdate();
+
+  /* Manage clock buttons */
+  int getClockButtonState();
+  extern int clockButtonState;
   
   /* Event semaphore */
   extern sem_t dgtnixEventSemaphore;

@@ -1065,6 +1065,13 @@ namespace DGT
         Position pos;
         sem_wait (&dgtnixEventSemaphore);
         string s = getDgtFEN ();
+        int button = getClockButtonState();
+        if (button!=0)
+          {
+            stringstream msg;
+            msg << "btn  "<< button;
+            dgtnixPrintMessageOnClock(msg.str().c_str(), true, false);
+          }
 
         //Display time on clock
         if (clockMode == FIXEDTIME && searching && limits.movetime >= 5000) //If we are in fixed time per move mode, display computer remaining time 

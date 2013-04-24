@@ -74,6 +74,12 @@ namespace DGT
   {
     FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL
   } clockMode;
+
+  enum ClockButton
+  {
+    OFF, TAKEBACK, HINT, SETUP, EVAL, TOGGLEMODE
+  } clockButton;
+
   int fixedTime, blitzTime, fischerInc, wTime, bTime;
   bool computerMoveFENReached = false;
   volatile bool searching = false;
@@ -261,6 +267,58 @@ namespace DGT
   }
 
   /// Change UCI parameters with special positions on the board
+
+  void switchToAnalysisMode()
+  {
+    dgtnixPrintMessageOnClock ("analyz", true, false);
+    playMode = ANALYSIS;
+    clockMode = INFINITE;
+    resetClock();
+  }
+
+  void switchToTrainMode()
+  {
+    dgtnixPrintMessageOnClock (" train", true, false);
+    playMode = TRAINING;
+    clockMode = INFINITE;
+    resetClock();
+  }
+
+  void switchToGameMode()
+  {
+    dgtnixPrintMessageOnClock ("  game", true, false);
+    playMode = GAME;
+    // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
+    if (clockMode == INFINITE)
+      {
+        clockMode = FIXEDTIME;
+      }
+    resetClock();
+  }
+
+  void switchToKibitzMode()
+  {
+    dgtnixPrintMessageOnClock ("chatty", true, false);
+    playMode = KIBITZ;
+    // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
+    if (clockMode == INFINITE)
+      {
+        clockMode = FIXEDTIME;
+      }
+    resetClock();
+  }
+
+  void switchToBookMode()
+  {
+    dgtnixPrintMessageOnClock ("  book", true, false);
+    playMode = BOOK;
+    // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
+    if (clockMode == INFINITE)
+      {
+        clockMode = FIXEDTIME;
+      }
+    resetClock();
+  }
 
   void
   configure (string fen)
@@ -509,55 +567,27 @@ namespace DGT
     // White queen on a5
     if (fen == "rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("  book", true, false);
-        playMode = BOOK;
-        // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
-        if (clockMode == INFINITE)
-          {
-            clockMode = FIXEDTIME;
-          }
-        resetClock ();
+        switchToBookMode();
       }
     // White queen on b5
     if (fen == "rnbqkbnr/pppppppp/8/1Q6/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("analyz", true, false);
-        playMode = ANALYSIS;
-        clockMode = INFINITE;
-        resetClock ();
+        switchToAnalysisMode();
       }
     // White queen on c5
     if (fen == "rnbqkbnr/pppppppp/8/2Q5/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock (" train", true, false);
-        playMode = TRAINING;
-        clockMode = INFINITE;
-        resetClock ();
+        switchToTrainMode();
       }
     // White queen on d5
     if (fen == "rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("  game", true, false);
-        playMode = GAME;
-        // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
-        if (clockMode == INFINITE)
-          {
-            clockMode = FIXEDTIME;
-          }
-        resetClock ();
+        switchToGameMode();
       }
-
     // White queen on e5
     if (fen == "rnbqkbnr/pppppppp/8/4Q3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
       {
-        dgtnixPrintMessageOnClock ("chatty", true, false);
-        playMode = KIBITZ;
-        // Reset clock mode to fixed time if the current mode is infinite, this can cause bugs if switching from ANALYSIS mode
-        if (clockMode == INFINITE)
-          {
-            clockMode = FIXEDTIME;
-          }
-        resetClock ();
+        switchToKibitzMode();
       }
 
     if (setupPosition)
@@ -889,6 +919,27 @@ namespace DGT
       }
   }
 
+  void printEngineEvalOnClock()
+  {
+    string uci_score = Search::UciPvDgt.score;
+
+    // Remove the words 'cp' from output and replace with just 'p' (centipawns) to save clock space
+    if (uci_score[0] == 'c' && uci_score[1] == 'p')
+      {
+        uci_score.erase (0, 2);
+      }
+    // Some trimming on the 'mate' message to save space on the DGT clock. Simple 'm' is sufficient
+    if (uci_score[0] == 'm' && uci_score[1] == 'a' && uci_score[2] == 't' && uci_score[3] == 'e')
+      {
+        uci_score.erase (1, 3);
+      }
+
+    replace (uci_score.begin (), uci_score.end (), '-', 'n'); //Replace minus sign with 'n' as minus sign is not available on DGT
+
+    fitStringToDgt (uci_score);
+    dgtnixPrintMessageOnClock (uci_score.c_str (), false, false);
+  }
+
   void*
   infiniteAnalysis (void *)
   {
@@ -905,23 +956,7 @@ namespace DGT
             if (!searching) continue;
             //            cout << "Infinite analysis!\n";
 
-            string uci_score = Search::UciPvDgt.score;
-
-            // Remove the words 'cp' from output and replace with just 'p' (centipawns) to save clock space
-            if (uci_score[0] == 'c' && uci_score[1] == 'p')
-              {
-                uci_score.erase (0, 2);
-              }
-            // Some trimming on the 'mate' message to save space on the DGT clock. Simple 'm' is sufficient
-            if (uci_score[0] == 'm' && uci_score[1] == 'a' && uci_score[2] == 't' && uci_score[3] == 'e')
-              {
-                uci_score.erase (1, 3);
-              }
-
-            replace (uci_score.begin (), uci_score.end (), '-', 'n'); //Replace minus sign with 'n' as minus sign is not available on DGT
-
-            fitStringToDgt (uci_score);
-            dgtnixPrintMessageOnClock (uci_score.c_str (), false, false);
+            printEngineEvalOnClock();
 
             stringstream s_depth;
             s_depth << Search::UciPvDgt.depth;
@@ -998,6 +1033,63 @@ namespace DGT
     return pgn;
   }
 
+  void processClockButton()
+  {
+    clockButton = (ClockButton) getClockButtonState();
+    if (clockButton!=OFF)
+      {
+        if (clockButton == HINT)
+          {
+            // Display a hint
+            printMoveOnClock(Search::UciPvDgt.ponderMove, false);
+          }
+        else if (clockButton == TAKEBACK)
+          {
+            printMoveOnClock(game.back (), false);
+//                stringstream msg;
+//                msg << "btn  "<< clockButton;
+//                dgtnixPrintMessageOnClock(msg.str().c_str(), true, false);
+          }
+        else if (clockButton == SETUP)
+          {
+            dgtnixPrintMessageOnClock(" setup", true, false);
+          }
+        else if (clockButton == EVAL)
+          {
+            printEngineEvalOnClock();
+          }
+        else if (clockButton == TOGGLEMODE)
+          {
+            switch (playMode)
+              {
+                case GAME:
+                  switchToAnalysisMode();
+                  break;
+                case ANALYSIS:
+                  switchToBookMode();
+                  // stop the search and restart
+                  Search::Signals.stop = true;
+                  break;
+                case BOOK:
+                  switchToTrainMode();
+                  break;
+                case TRAINING:
+                  switchToKibitzMode();
+                  // stop the search and restart
+                  Search::Signals.stop = true;
+                  break;
+                case KIBITZ:
+                  switchToGameMode();
+                  break;
+                default:
+                  switchToGameMode();
+                  break;
+              }
+          }
+
+      }
+  }
+
   void
   loop (const string& args)
   {
@@ -1065,13 +1157,7 @@ namespace DGT
         Position pos;
         sem_wait (&dgtnixEventSemaphore);
         string s = getDgtFEN ();
-        int button = getClockButtonState();
-        if (button!=0)
-          {
-            stringstream msg;
-            msg << "btn  "<< button;
-            dgtnixPrintMessageOnClock(msg.str().c_str(), true, false);
-          }
+        processClockButton();
 
         //Display time on clock
         if (clockMode == FIXEDTIME && searching && limits.movetime >= 5000) //If we are in fixed time per move mode, display computer remaining time 

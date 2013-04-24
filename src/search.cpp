@@ -1570,6 +1570,8 @@ split_point_start: // At split points actual search starts from here
         UciPvDgt.multipv = i + 1;
 
         UciPvDgt.pv = " ";
+        UciPvDgt.bestMove = RootMoves[0].pv[0];
+        UciPvDgt.ponderMove = RootMoves[0].pv[1];
 
         for (size_t j = 0; RootMoves[i].pv[j] != MOVE_NONE; j++)
           {

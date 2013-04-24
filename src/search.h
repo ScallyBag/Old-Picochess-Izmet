@@ -43,7 +43,8 @@ namespace Search {
     Time::point elapsed;
     size_t multipv;
     std::string pv;
-
+    Move bestMove;
+    Move ponderMove;
  };
 
 /// The Stack struct keeps track of the information we need to remember from

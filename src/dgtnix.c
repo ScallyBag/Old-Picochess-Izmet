@@ -454,12 +454,19 @@ void _sendMessageToClock(unsigned char a, unsigned char b, unsigned char c, unsi
   message[10]=dots;
   message[11]=beep?0x03:0x01;
   message[12]=0x00;
+  int numRetries = 0;
   retry:
   if(write(g_descriptorDriverBoard,&message ,13)!=13)
     {
-      perror("dgtnix critical:sendMessageToClock: write() error\n");
-      _closeDescriptor(&g_descriptorDriverBoard);
-      exit(-1);
+      perror("dgtnix critical:sendMessageToClock: write() error. Retrying.. \n");
+      ++ numRetries;
+      if (numRetries>5) {
+        perror("dgtnix critical:sendMessageToClock: More than 5 retries, exiting.\n");
+        _closeDescriptor(&g_descriptorDriverBoard);
+        exit(-1);
+      }
+      sleep(numRetries*2);
+      goto retry;
     }
 
     sleep(1); //wait for the ACK message
@@ -575,13 +582,25 @@ static void *_threadManagedFunc(void *params)
   _queryVendorStrings();
   sem_init(&dgtnixEventSemaphore,0,0);
   _sendMessageToBoard(_DGTNIX_SEND_UPDATE);
+  int numRetries = 0;
   while( 1 ) 
     {  
       if(_readMessageFromBoard()<0)
 	{
-	  fprintf(stderr,"dgtnixManagerFunc:read error\n");
-	  break;
+	  ++numRetries;
+	  sleep(numRetries*2);
+	  fprintf(stderr, "dgtnixManagerFunc:read error -- retrying\n");
+	  if (numRetries>5)
+	    {
+	      fprintf(stderr,"dgtnixManagerFunc:read error after five retries, terminating\n");
+	      break;
+	    }
+	  continue;
 	}
+      else
+        {
+          numRetries = 0;
+        }
       /*_dumpBoard(g_board);*/
       sem_post(&dgtnixEventSemaphore); 
     }

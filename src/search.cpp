@@ -35,6 +35,10 @@
 #include "tt.h"
 #include "ucioption.h"
 
+// TB
+#include "bitcount.h"
+#include "tbprobe.h"
+
 namespace Search {
 
   volatile SignalsType Signals;
@@ -225,6 +229,22 @@ void Search::think() {
           << " increment: "   << Limits.inc[RootColor]
           << " moves to go: " << Limits.movestogo
           << std::endl;
+  }
+  
+  // TB
+  if (popcount<Full>(RootPos.pieces()) <= 6)
+  {
+      int success;
+      Move move;
+      Value v = (Value)root_probe(RootPos, &move, &success);
+      if (success)
+      {
+          std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), move));
+          sync_cout << "info depth 1 score " << score_to_uci(v) << " pv "
+                    << move_to_uci(RootMoves[0].pv[0], RootPos.is_chess960())
+                    << sync_endl;
+          goto finalize;
+      }
   }
 
   // Reset the threads, still sleeping: will be wake up at split time
@@ -584,6 +604,20 @@ namespace {
         return ttValue;
     }
 
+    // TB
+    if (popcount<Full>(pos.pieces()) <= 6) {
+      int success;
+      int v = probe_wdl(pos, &success);
+      if (success) {
+	if (v < -1) value = -VALUE_MATE + MAX_PLY + ss->ply;
+	else if (v > 1) value = VALUE_MATE - MAX_PLY - ss->ply;
+	else value = VALUE_DRAW + v;
+        TT.store(posKey, value_to_tt(value, ss->ply), BOUND_EXACT, depth + 6 * ONE_PLY,
+                 MOVE_NONE, VALUE_NONE, VALUE_NONE);
+	return value;
+      }
+    }
+    
     // Step 5. Evaluate the position statically and update parent's gain statistics
     if (inCheck)
         ss->staticEval = ss->evalMargin = eval = VALUE_NONE;

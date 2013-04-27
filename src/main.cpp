@@ -28,6 +28,9 @@
 #include "tt.h"
 #include "ucioption.h"
 
+// TB
+#include "tbprobe.h"
+
 int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
@@ -40,6 +43,9 @@ int main(int argc, char* argv[]) {
   Eval::init();
   Threads.init();
   TT.set_size(Options["Hash"]);
+
+  // TB
+  init_tablebases();
 
   std::string args;
 

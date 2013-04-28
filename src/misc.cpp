@@ -61,7 +61,7 @@ const string engine_info(bool to_uci) {
         << "-" << setw(2) << (1 + months.find(month) / 4) << "-" << year.substr(2);
   }
 
-  s << cpu64 << popcnt << (to_uci ? "\nid author ": " by ")
+  s << cpu64 << popcnt << " RTB "<< (to_uci ? "\nid author ": " by ")
     << "Tord Romstad, Marco Costalba and Joona Kiiski";
 
   return s.str();

@@ -18,6 +18,7 @@
 #include <sys/mman.h>
 #endif
 #include "tbcore.h"
+#include "ucioption.h"
 
 #define TBMAX_PIECE 254
 #define TBMAX_PAWN 256
@@ -229,7 +230,8 @@ static void init_tb(char *str)
 
 void init_tablebases(void)
 {
-  char str[16], *dirptr;
+  char str[16];
+  const char *dirptr;
   int i, j, k, l;
 
   LOCK_INIT(TB_mutex);
@@ -243,13 +245,13 @@ void init_tablebases(void)
   for (i = 0; i < DTZ_ENTRIES; i++)
     DTZ_table[i].entry = NULL;
 
-  dirptr = getenv(DTZDIR);
+  dirptr = ((std::string)(Options["RTB DTZ Path"])).c_str();
   if (dirptr && strlen(dirptr) < 100)
     strcpy(TBdir, dirptr);
   else
     strcpy(TBdir, ".");
 
-  dirptr = getenv(WDLDIR);
+  dirptr = ((std::string)(Options["RTB WDL Path"])).c_str();
   if (dirptr && strlen(dirptr) < 100)
     strcpy(WDLdir, dirptr);
   else

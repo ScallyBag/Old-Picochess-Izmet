@@ -29,6 +29,8 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
+// TB
+#include "tbprobe.h"
 
 using namespace std;
 
@@ -179,6 +181,11 @@ namespace {
         Options[name] = value;
     else
         sync_cout << "No such option: " << name << sync_endl;
+
+    // Init Tablebases
+    if(!name.compare("RTB DTZ Path") || !name.compare("RTB WDL Path"))
+        if(!((std::string)Options["RTB DTZ Path"]).empty() && !((std::string)Options["RTB WDL Path"]).empty())
+            init_tablebases();
   }
 
 

@@ -877,17 +877,6 @@ namespace DGT
     dgtnixPrintMessageOnClock (s.c_str (), false, dots);
   }
 
-  void*
-  wakeUpEverySecond (void*)
-  {
-    while (true)
-      {
-        sleep (1);
-        sem_post (&dgtnixEventSemaphore);
-      }
-    return NULL;
-  }
-
   void
   fitStringToDgt (string& s)
   {
@@ -903,20 +892,6 @@ namespace DGT
         s = " " + s;
       }
 
-  }
-
-  void
-  display_top_book_moves (PolyglotBook& book, const Position& pos, const int num)
-  {
-    // Display top 3 moves in reverse order of strength so that the top move is on the clock. 3 Moves without delay is not that bad
-    vector<Move> book_moves = book.probe_moves (pos, Options["Book File"], num);
-
-    for (vector<Move>::reverse_iterator it = book_moves.rbegin (); it != book_moves.rend (); ++it)
-      {
-        // Dont beep when showing book moves, can be annoying
-        printMoveOnClock (*it, false);
-        //                            sleep(1);
-      }
   }
 
   void printEngineEvalOnClock()
@@ -941,17 +916,19 @@ namespace DGT
   }
 
   void*
-  infiniteAnalysis (void *)
+  wakeUpEverySecond (void*)
   {
-
     while (true)
       {
+        sleep (1);
+        sem_post (&dgtnixEventSemaphore);
+
         //        cout <<"Infinite clock mode: "<< clockMode;
         //        cout <<"\n searching: "<<searching;
         //        cout <<"\n";
         if ((clockMode == INFINITE || playMode==KIBITZ) && searching)
           {
-            sleep (2);
+            sleep (1);
             // Dont show analysis if there is no longer a search
             if (!searching) continue;
             //            cout << "Infinite analysis!\n";
@@ -975,9 +952,23 @@ namespace DGT
               }
 
           }
+
       }
     return NULL;
+  }
 
+  void
+  display_top_book_moves (PolyglotBook& book, const Position& pos, const int num)
+  {
+    // Display top 3 moves in reverse order of strength so that the top move is on the clock. 3 Moves without delay is not that bad
+    vector<Move> book_moves = book.probe_moves (pos, Options["Book File"], num);
+
+    for (vector<Move>::reverse_iterator it = book_moves.rbegin (); it != book_moves.rend (); ++it)
+      {
+        // Dont beep when showing book moves, can be annoying
+        printMoveOnClock (*it, false);
+        //                            sleep(1);
+      }
   }
 
   bool
@@ -1150,9 +1141,6 @@ namespace DGT
     // Start the wakeup thread
     pthread_t wakeUpThread;
     pthread_create (&wakeUpThread, NULL, wakeUpEverySecond, (void*) NULL);
-
-    pthread_t infiniteThread;
-    pthread_create (&infiniteThread, NULL, infiniteAnalysis, (void*) NULL);
 
     // Main DGT event loop
     while (true)

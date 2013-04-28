@@ -654,14 +654,14 @@ static int _closeDescriptor(int *descriptor)
   return 0;
 }
 
-int extractBit (unsigned char data, int bitPosition) {
-    return (data >> bitPosition) & 0x01;
-}
-
 int getClockButtonState() {
   int button = clockButtonState;
   clockButtonState = 0;
   return button;
+}
+
+int extractBit (unsigned char data, int bitPosition) {
+    return (data >> bitPosition) & 0x01;
 }
 
 // TODO: Detect bit order based on machine endianness. This code wont work on little endian machines.
@@ -670,6 +670,8 @@ void processClockBits (unsigned char data) {
     int first = extractBit(data, 0);
     int second = extractBit(data, 1);
     int third = extractBit(data, 2);
+    int fifth = extractBit(data, 4);
+    int sixth = extractBit(data, 5);
 
     // Detect clock buttons from left most button
     if (first == 1 && second == 0 && third == 0) {
@@ -684,7 +686,7 @@ void processClockBits (unsigned char data) {
         _debug("Clock button #3 pressed\n");
         clockButtonState = 3;
     }
-    else if (first == 0 && second == 1 && third == 0) {
+    else if (first == 0 && second == 1 && third == 0 && fifth == 1 && sixth == 1) {
         _debug("Clock button #4 pressed\n");
         clockButtonState = 4;
     }
@@ -716,6 +718,10 @@ static void _bwtimeReceived(unsigned char buffer[7])
    /* Check if we have a clock ack message */
   if( ((buffer[3]&0x0f) == 0x0a) || ((buffer[6]&0x0f) == 0x0a) )
   {
+//    printf("bit value:");
+//    printf("%d\n", extractBit(buffer[3],3));
+//    processClockBits(buffer[2]);
+
     processClockBits(buffer[5]);
     processClockBits(buffer[6]);
      //clock ack message

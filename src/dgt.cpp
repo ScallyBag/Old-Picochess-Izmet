@@ -1045,7 +1045,10 @@ namespace DGT
           }
         else if (clockButton == TAKEBACK)
           {
-            printMoveOnClock(game.back (), false);
+            if (!game.empty ())
+              {
+                printMoveOnClock(game.back (), false);
+              }
 //                stringstream msg;
 //                msg << "btn  "<< clockButton;
 //                dgtnixPrintMessageOnClock(msg.str().c_str(), true, false);

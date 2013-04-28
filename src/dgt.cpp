@@ -74,14 +74,14 @@ namespace DGT
   {
     FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL
   } clockMode;
-
   enum ClockButton
   {
-    OFF, TAKEBACK, HINT, SETUP, EVAL, TOGGLEMODE
+    OFF, TAKEBACK, HINT, SETUP, FORCEMOVE, TOGGLEMODE
   } clockButton;
 
   int fixedTime, blitzTime, fischerInc, wTime, bTime;
   bool computerMoveFENReached = false;
+  volatile bool refreshPosition = false;
   volatile bool searching = false;
   string ponderHitFEN = "";
 
@@ -1031,8 +1031,11 @@ namespace DGT
       {
         if (clockButton == HINT)
           {
+            printEngineEvalOnClock();
+            sleep(1);
             // Display a hint
             printMoveOnClock(Search::UciPvDgt.ponderMove, false);
+
           }
         else if (clockButton == TAKEBACK)
           {
@@ -1048,9 +1051,9 @@ namespace DGT
           {
             dgtnixPrintMessageOnClock(" setup", true, false);
           }
-        else if (clockButton == EVAL)
+        else if (clockButton == FORCEMOVE)
           {
-            printEngineEvalOnClock();
+            refreshPosition = true;
           }
         else if (clockButton == TOGGLEMODE)
           {
@@ -1151,7 +1154,7 @@ namespace DGT
         processClockButton();
 
         //Display time on clock
-        if (clockMode == FIXEDTIME && searching && limits.movetime >= 5000) //If we are in fixed time per move mode, display computer remaining time 
+        if (clockMode == FIXEDTIME && searching && limits.movetime >= 5000) //If we are in fixed time per move mode, display computer remaining time
           {
             int remainingTime = limits.movetime - (Time::now () - searchStartTime);
             if (remainingTime >= 1000)
@@ -1166,8 +1169,9 @@ namespace DGT
             else printTimeOnClock (wTime, bTime - (Time::now () - searchStartTime), true, blink ());
           }
 
-        if (currentFEN != s)
+        if (currentFEN != s || refreshPosition)
           { //There is some change on the DGT board
+//            printf("Some change on board!");
             currentFEN = s;
 
             cout << currentFEN << endl;
@@ -1195,8 +1199,9 @@ namespace DGT
             Move move = isPlayable (currentFEN);
             cout << "-------------------------Move:" << move << endl;
            
-            if (move != MOVE_NONE || (!currentFEN.compare (getStartFEN ()) && (computerPlays == WHITE || clockMode == INFINITE)))
+            if (move != MOVE_NONE || (!currentFEN.compare (getStartFEN ()) && (computerPlays == WHITE || clockMode == INFINITE)) || refreshPosition)
               {
+                if (refreshPosition) refreshPosition = false;
                 if (move == MOVE_NULL && clockMode == INFINITE)
                   {
                     // To support UNDO move operation in infinite analysis mode
@@ -1330,7 +1335,6 @@ namespace DGT
                     else dgtnixPrintMessageOnClock ("stlmat", true, false);
                   }
               } // end if computerPlays == WHITE
-
           }
 
         //Check for finished search

@@ -30,6 +30,7 @@
 // TB
 #include "tbprobe.h"
 
+
 int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
@@ -43,6 +44,7 @@ int main(int argc, char* argv[]) {
   Threads.init();
   TT.set_size(Options["Hash"]);
   // TB
+  tb_max_pieces_found=0;
   init_tablebases();
 
   std::string args;

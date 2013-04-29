@@ -238,9 +238,9 @@ void Search::think() {
   }
 
   // TB
-  use_tb = 6;
+  use_tb = tb_max_pieces_found;
   tb_position = 0;
-  if (popcount<Full>(RootPos.pieces()) <= 6)
+  if (popcount<Full>(RootPos.pieces()) <= use_tb)
   {
       if ((tb_position = root_probe(RootPos))) {
           // The current root position is in the tablebases.

@@ -44,6 +44,7 @@ static LOCK_T TB_mutex;
 static char TBdir[128];
 static char WDLdir[128];
 
+int tb_max_pieces_found;
 static int TBnum_piece, TBnum_pawn;
 static struct TBEntry_piece TB_piece[TBMAX_PIECE];
 static struct TBEntry_pawn TB_pawn[TBMAX_PAWN];
@@ -198,6 +199,7 @@ static void init_tb(char *str)
   entry->num = 0;
   for (i = 0; i < 16; i++)
     entry->num += pcs[i];
+  if(entry->num > tb_max_pieces_found) tb_max_pieces_found=entry->num;
   entry->symmetric = (key == key2);
   entry->has_pawns = (pcs[TB_WPAWN] + pcs[TB_BPAWN] > 0);
 
@@ -233,6 +235,7 @@ void init_tablebases(void)
   char str[16];
   const char *dirptr;
   int i, j, k, l;
+  tb_max_pieces_found=0;
 
   LOCK_INIT(TB_mutex);
 
@@ -312,7 +315,7 @@ void init_tablebases(void)
 	  init_tb(str);
 	}
 
-  printf("Found %d tablebases.\n", TBnum_piece + TBnum_pawn);
+  printf("Found %d tablebases. %d pieces.\n", TBnum_piece + TBnum_pawn, tb_max_pieces_found);
 
   init_indices();
 }

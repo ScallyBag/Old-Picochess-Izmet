@@ -232,7 +232,7 @@ void Search::think() {
   }
   
   // TB
-  if (popcount<Full>(RootPos.pieces()) <= 6)
+  if (popcount<Full>(RootPos.pieces()) <= tb_max_pieces_found)
   {
       int success;
       Move move;

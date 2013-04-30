@@ -1032,7 +1032,7 @@ namespace DGT
         if (clockButton == HINT)
           {
             printEngineEvalOnClock();
-            sleep(1);
+//            sleep(1);
             // Display a hint
             printMoveOnClock(Search::UciPvDgt.ponderMove, false);
 

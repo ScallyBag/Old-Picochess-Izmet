@@ -607,7 +607,7 @@ namespace {
     }
 
     // TB
-    if (popcount<Full>(pos.pieces()) <= 6) {
+    if (!RootNode && popcount<Full>(pos.pieces()) <= tb_max_pieces_found) {
       int success;
       int v = probe_wdl(pos, &success);
       if (success) {

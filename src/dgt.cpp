@@ -64,6 +64,27 @@ namespace DGT
   u_int MAX_FEN_QUEUE_SIZE = 3;
   char* customStartFEN;
 
+  //choose opening book
+  int NUM_OPENING_BOOKS = 11;
+  int MAX_TIME_CONTROL_NUM = 22;
+  typedef map<string, string> BookMap;
+
+  static const BookMap::value_type rawData[] = {
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "nobook"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "fun"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "anand"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "korchnoi"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "larsen"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "pro"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/6q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "gm2001"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/7q/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "varied"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/7q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "gm1950"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/6q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "performance"),
+    BookMap::value_type ("rnbqkbnr/pppppppp/8/8/5q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "stfish")
+  };
+
+  BookMap bookMap (rawData, rawData + NUM_OPENING_BOOKS);
+
   volatile enum PlayMode
   {
       // Kibitz mode is game mode + commentary
@@ -74,10 +95,40 @@ namespace DGT
   {
     FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL
   } clockMode;
+
   enum ClockButton
   {
-    OFF, TAKEBACK, HINT, SETUP, FORCEMOVE, TOGGLEMODE
+    OFF, BACK, DECREASE, HOME, INCREASE, SELECT
   } clockButton;
+
+  enum MainMenu
+  {
+    DEFAULT, POSITION_SETUP, LEVEL, OPENING_BOOK, TIME_CONTROL, ENGINE, SYSTEM, MAX_MAIN
+  } mainMenu;
+
+  enum PositionMenu
+  {
+     SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, MAX_POSITION
+  } positionMenu;
+
+  int levelNum;
+  int bookNum;
+  int timeControlNum = -1;
+
+  enum EngineMenu
+  {
+    COMING_SOON_ENG, MAX_ENGINE
+  } engineMenu;
+
+  enum SYSTEM
+  {
+    BENCHMARK, COMING_SOON, MAX_SYSTEM
+  } systemMenu;
+
+  enum MenuOperation
+  {
+    INC, DEC, ENABLE
+  };
 
   int fixedTime, blitzTime, fischerInc, wTime, bTime;
   bool computerMoveFENReached = false;
@@ -320,10 +371,268 @@ namespace DGT
     resetClock();
   }
 
+  void completeSetupPosition(string strippedFen)
+  {
+      setupPosition = false;
+      customPosition = true;
+      string testFen = string (strippedFen);
+
+      if (computerPlays == BLACK) testFen.append (" w ");
+      else testFen.append (" b ");
+
+      testFen.append (computeCastlingRights (strippedFen));
+      testFen.append (" 0 1");
+
+      customStartFEN = new char[strlen (testFen.c_str ())];
+      strcpy (customStartFEN, testFen.c_str ());
+      clearGame ();
+  }
+
+  void setOpeningBook(BookMap::iterator it, bool change)
+  {
+    if (it != bookMap.end ())
+      {
+        string s = it->second;
+        if (change) {
+          UCI::loop (string ("setoption name Book File value ") + bookPath + s + ".bin");
+          UCI::loop (string ("setoption name OwnBook value ")+(s.compare ("nobook") ? "true" : "false"));
+          }
+        if (s.size () < 6) s.insert (s.begin (), 6 - s.size (), ' ');
+        dgtnixPrintMessageOnClock (s.c_str (), true, false);
+      }
+  }
+
+  void setTimeControl(string fen, bool set, bool clockMenu)
+  {
+    if (!clockMenu) {
+        timeControlNum = -1;
+      }
+
+    if (fen == "rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 0)
+      {
+        dgtnixPrintMessageOnClock ("mov001", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 1000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 1)
+      {
+        dgtnixPrintMessageOnClock ("mov003", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 3000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 2)
+      {
+        dgtnixPrintMessageOnClock ("mov005", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 5000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 3)
+      {
+        dgtnixPrintMessageOnClock ("mov010", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 10000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 4)
+      {
+        dgtnixPrintMessageOnClock ("mov015", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 15000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 5)
+      {
+        dgtnixPrintMessageOnClock ("mov030", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 30000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 6)
+      {
+        dgtnixPrintMessageOnClock ("mov100", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 60000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 7)
+      {
+        dgtnixPrintMessageOnClock ("mov200", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            fixedTime = 120000;
+            clockMode = FIXEDTIME;
+            resetClock ();
+        }
+      }
+    //blitz modes : 1, 3, 5, 10, 15, 30, 60, 90  minutes
+    if (fen == "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 8)
+      {
+        dgtnixPrintMessageOnClock ("bli100", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            blitzTime = 60000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 9)
+      {
+        dgtnixPrintMessageOnClock ("bli300", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            blitzTime = 180000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 10)
+      {
+        dgtnixPrintMessageOnClock ("bli500", true, DGTNIX_RIGHT_DOT);
+        if (set) {
+            blitzTime = 300000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 11)
+      {
+        dgtnixPrintMessageOnClock ("bli000", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1);
+        if (set) {
+            blitzTime = 600000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 12)
+      {
+        dgtnixPrintMessageOnClock ("bli500", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1);
+        if (set) {
+            blitzTime = 900000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 13)
+      {
+        dgtnixPrintMessageOnClock ("bli030", true, DGTNIX_RIGHT_SEMICOLON);
+        if (set) {
+            blitzTime = 1800000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 14)
+      {
+        dgtnixPrintMessageOnClock ("bli100", true, DGTNIX_RIGHT_SEMICOLON);
+        if (set) {
+            blitzTime = 3600000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 15)
+      {
+        dgtnixPrintMessageOnClock ("bli130", true, DGTNIX_RIGHT_SEMICOLON);
+        if (set) {
+            blitzTime = 5400000;
+            clockMode = BLITZ;
+            resetClock ();
+          }
+      }
+    //'Blitz Fischer' + 'Special Lvl' 3+2, 3+5, 4+5, 5+1, 15+5, 20+10, opponents average, 1/2 opponents average
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 16)
+      {
+        dgtnixPrintMessageOnClock ("f 32  ", true, false);
+        if (set) {
+            // The stockfish controls are all in milliseconds
+            // 3 minutes => 3 * 60 * 1000 to convert milliseconds to seconds
+            blitzTime = 3 * 60 * 1000;
+            fischerInc = 2 * 1000;
+            clockMode = BLITZFISCHER;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 17)
+      {
+        dgtnixPrintMessageOnClock ("f 42  ", true, false);
+        if (set) {
+            blitzTime = 4 * 60 * 1000;
+            fischerInc = 2 * 1000;
+            clockMode = BLITZFISCHER;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 18)
+      {
+        dgtnixPrintMessageOnClock ("f 53  ", true, false);
+        if (set) {
+            blitzTime = 5 * 60 * 1000;
+            fischerInc = 3 * 1000;
+            clockMode = BLITZFISCHER;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 19)
+      {
+        dgtnixPrintMessageOnClock ("f 55  ", true, false);
+        if (set) {
+            blitzTime = 5 * 60 * 1000;
+            fischerInc = 5 * 1000;
+            clockMode = BLITZFISCHER;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 20)
+      {
+        dgtnixPrintMessageOnClock ("f155  ", true, false);
+        if (set) {
+            blitzTime = 15 * 60 * 1000;
+            fischerInc = 5 * 1000;
+            clockMode = BLITZFISCHER;
+            resetClock ();
+          }
+      }
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == 21)
+      {
+        dgtnixPrintMessageOnClock ("f2510 ", true, false);
+        if (set) {
+            blitzTime = 25 * 60 * 1000;
+            fischerInc = 10 * 1000;
+            clockMode = BLITZFISCHER;
+            resetClock ();
+          }
+      }
+
+    if (fen == "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1" || timeControlNum == MAX_TIME_CONTROL_NUM)
+      {
+        dgtnixPrintMessageOnClock ("f9030 ", true, false);
+        if (set) {
+            blitzTime = 90 * 60 * 1000;
+            fischerInc = 30 * 1000;
+            clockMode = BLITZFISCHER;
+            resetClock ();
+          }
+      }
+  }
+
   void
   configure (string fen)
   {
-    //    cout << "Fen received: "<< fen;
+//        cout << "Fen received: "<< fen;
     //set skill level
     static string skillFENs[] = {
       "rnbqkbnr/pppppppp/q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -387,180 +696,7 @@ namespace DGT
 
     //set time control
     //fixed time per move modes : 1, 3, 5, 10, 15, 30, 60, 120 seconds
-    if (fen == "rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov001", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 1000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov003", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 3000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov005", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 5000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov010", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 10000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov015", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 15000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov030", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 30000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov100", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 60000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("mov200", true, DGTNIX_RIGHT_DOT);
-        fixedTime = 120000;
-        clockMode = FIXEDTIME;
-        resetClock ();
-      }
-    //blitz modes : 1, 3, 5, 10, 15, 30, 60, 90  minutes
-    if (fen == "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli100", true, DGTNIX_RIGHT_DOT);
-        blitzTime = 60000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli300", true, DGTNIX_RIGHT_DOT);
-        blitzTime = 180000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli500", true, DGTNIX_RIGHT_DOT);
-        blitzTime = 300000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli000", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1);
-        blitzTime = 600000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli500", true, DGTNIX_RIGHT_DOT | DGTNIX_RIGHT_1);
-        blitzTime = 900000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli030", true, DGTNIX_RIGHT_SEMICOLON);
-        blitzTime = 1800000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli100", true, DGTNIX_RIGHT_SEMICOLON);
-        blitzTime = 3600000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("bli130", true, DGTNIX_RIGHT_SEMICOLON);
-        blitzTime = 5400000;
-        clockMode = BLITZ;
-        resetClock ();
-      }
-    //'Blitz Fischer' + 'Special Lvl' 3+2, 3+5, 4+5, 5+1, 15+5, 20+10, opponents average, 1/2 opponents average
-    if (fen == "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("f 32  ", true, false);
-        // The stockfish controls are all in milliseconds
-        // 3 minutes => 3 * 60 * 1000 to convert milliseconds to seconds
-        blitzTime = 3 * 60 * 1000;
-        fischerInc = 2 * 1000;
-        clockMode = BLITZFISCHER;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("f 42  ", true, false);
-        blitzTime = 4 * 60 * 1000;
-        fischerInc = 2 * 1000;
-        clockMode = BLITZFISCHER;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("f 53  ", true, false);
-        blitzTime = 5 * 60 * 1000;
-        fischerInc = 3 * 1000;
-        clockMode = BLITZFISCHER;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("f 55  ", true, false);
-        blitzTime = 5 * 60 * 1000;
-        fischerInc = 5 * 1000;
-        clockMode = BLITZFISCHER;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("f155  ", true, false);
-        blitzTime = 15 * 60 * 1000;
-        fischerInc = 5 * 1000;
-        clockMode = BLITZFISCHER;
-        resetClock ();
-      }
-    if (fen == "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("f2510 ", true, false);
-        blitzTime = 25 * 60 * 1000;
-        fischerInc = 10 * 1000;
-        clockMode = BLITZFISCHER;
-        resetClock ();
-      }
-
-    // TODO: Fix FEN!
-    if (fen == "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-      {
-        dgtnixPrintMessageOnClock ("f9030 ", true, false);
-        blitzTime = 90 * 60 * 1000;
-        fischerInc = 30 * 1000;
-        clockMode = BLITZFISCHER;
-        resetClock ();
-      }
+    setTimeControl(fen, true, false);
 
 
     // Select Game modes
@@ -631,19 +767,7 @@ namespace DGT
             if (matches >= 1)
               {
                 // match
-                setupPosition = false;
-                customPosition = true;
-                string testFen = string (strippedFen);
-
-                if (computerPlays == BLACK) testFen.append (" w ");
-                else testFen.append (" b ");
-
-                testFen.append (computeCastlingRights (strippedFen));
-                testFen.append (" 0 1");
-
-                customStartFEN = new char[strlen (testFen.c_str ())];
-                strcpy (customStartFEN, testFen.c_str ());
-                clearGame ();
+                completeSetupPosition(strippedFen);
               }
 
           }
@@ -651,34 +775,9 @@ namespace DGT
         addToFenQueue (fen);
       }
 
-    //choose opening book
-    typedef map<string, string> BookMap;
-
-    static const BookMap::value_type rawData[] = {
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "nobook"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "fun"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "anand"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "korchnoi"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "larsen"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "pro"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/6q1/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "gm2001"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/8/7q/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "varied"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/7q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "gm1950"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/6q1/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "performance"),
-      BookMap::value_type ("rnbqkbnr/pppppppp/8/8/5q2/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "stfish")
-    };
-
     // Warning need to increment the below number for more book additions to work!
-    BookMap book (rawData, rawData + 11);
-    BookMap::iterator it = book.find (fen);
-    if (it != book.end ())
-      {
-        string s = it->second;
-        UCI::loop (string ("setoption name Book File value ") + bookPath + s + ".bin");
-        UCI::loop (string ("setoption name OwnBook value ")+(s.compare ("nobook") ? "true" : "false"));
-        if (s.size () < 6) s.insert (s.begin (), 6 - s.size (), ' ');
-        dgtnixPrintMessageOnClock (s.c_str (), true, false);
-      }
+    BookMap::iterator it = bookMap.find (fen);
+    setOpeningBook(it, true);
 
     //board orientation
     if (fen == "RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1" || fen == "8/8/8/8/8/8/8/q6q w KQkq - 0 1" || fen == "Q6Q/8/8/8/8/8/8/8 w KQkq - 0 1")
@@ -958,10 +1057,10 @@ namespace DGT
   }
 
   void
-  display_top_book_moves (PolyglotBook& book, const Position& pos, const int num)
+  display_top_book_moves (PolyglotBook& b, const Position& pos, const int num)
   {
     // Display top 3 moves in reverse order of strength so that the top move is on the clock. 3 Moves without delay is not that bad
-    vector<Move> book_moves = book.probe_moves (pos, Options["Book File"], num);
+    vector<Move> book_moves = b.probe_moves (pos, Options["Book File"], num);
 
     for (vector<Move>::reverse_iterator it = book_moves.rbegin (); it != book_moves.rend (); ++it)
       {
@@ -990,6 +1089,12 @@ namespace DGT
     // Write header if its the first move
     if (plyCount==0)
       {
+        if (customPosition) {
+            pgn.append(" ( FEN: ");
+            pgn.append(getStartFEN());
+            pgn.append(" )");
+          }
+
         if (playMode == ANALYSIS)
           {
             pgn.append ("Analysis\n");
@@ -1024,67 +1129,310 @@ namespace DGT
     return pgn;
   }
 
-  void processClockButton()
+  void operateBook(MenuOperation mo)
   {
-    clockButton = (ClockButton) getClockButtonState();
-    if (clockButton!=OFF)
-      {
-        if (clockButton == HINT)
-          {
-            printEngineEvalOnClock();
-//            sleep(1);
-            // Display a hint
-            printMoveOnClock(Search::UciPvDgt.ponderMove, false);
 
-          }
-        else if (clockButton == TAKEBACK)
-          {
-            if (!game.empty ())
-              {
-                printMoveOnClock(game.back (), false);
-              }
-//                stringstream msg;
-//                msg << "btn  "<< clockButton;
-//                dgtnixPrintMessageOnClock(msg.str().c_str(), true, false);
-          }
-        else if (clockButton == SETUP)
-          {
-            dgtnixPrintMessageOnClock(" setup", true, false);
-          }
-        else if (clockButton == FORCEMOVE)
-          {
-            refreshPosition = true;
-          }
-        else if (clockButton == TOGGLEMODE)
-          {
-            switch (playMode)
-              {
-                case GAME:
-                  switchToAnalysisMode();
-                  break;
-                case ANALYSIS:
-                  switchToBookMode();
-                  // stop the search and restart
-                  Search::Signals.stop = true;
-                  break;
-                case BOOK:
-                  switchToTrainMode();
-                  break;
-                case TRAINING:
-                  switchToKibitzMode();
-                  // stop the search and restart
-                  Search::Signals.stop = true;
-                  break;
-                case KIBITZ:
-                  switchToGameMode();
-                  break;
-                default:
-                  switchToGameMode();
-                  break;
-              }
-          }
+    // Warning need to increment the below number for more book additions to work!
+    BookMap::iterator it = bookMap.begin();
+    if (mo == INC)
+      {
+        ++bookNum;
+        if (bookNum>(NUM_OPENING_BOOKS-1)) { bookNum = 0;}
+        cout << "Current bookNum: " << bookNum << "\n";
+        std::advance (it, bookNum);
+
+        setOpeningBook(it, false);
+      }
+    else if (mo == DEC)
+      {
+        --bookNum;
+        if (bookNum<0) { bookNum = NUM_OPENING_BOOKS - 1;}
+        cout << "Current bookNum: " << bookNum << "\n";
+        std::advance (it, bookNum);
+
+        setOpeningBook(it, false);
+      }
+    else if (mo == ENABLE)
+      {
+        std::advance (it, bookNum);
+        setOpeningBook(it, true);
+        dgtnixPrintMessageOnClock ("    ok", true, false);
+        mainMenu = DEFAULT;
+      }
+  }
+
+  void operateTimeControl(MenuOperation mo)
+  {
+    if (mo == INC)
+      {
+        ++timeControlNum;
+        if (timeControlNum>MAX_TIME_CONTROL_NUM) { timeControlNum = 0;}
+        setTimeControl("", false, true);
+      }
+    else if (mo == DEC)
+      {
+        --timeControlNum;
+        if (timeControlNum<0) { timeControlNum = MAX_TIME_CONTROL_NUM;}
+        setTimeControl("", false, true);
+      }
+    else if (mo == ENABLE)
+      {
+        setTimeControl("", true, true);
+        mainMenu = DEFAULT;
+      }
+
+//    dgtnixPrintMessageOnClock (lvl.str ().c_str (), true, false);
+
+  }
+
+  void operateLevel(MenuOperation mo)
+  {
+    stringstream lvl;
+    lvl << "lvl" << setw(3) << levelNum;
+    if (mo == INC)
+      {
+        ++levelNum;
+        if (levelNum>20) { levelNum = 0;}
 
       }
+    else if (mo == DEC)
+      {
+        --levelNum;
+        if (levelNum<0) { levelNum = 20;}
+      }
+    dgtnixPrintMessageOnClock (lvl.str ().c_str (), true, false);
+
+    if (mo == ENABLE)
+      {
+        stringstream lvl_uci;
+        lvl_uci << "setoption name Skill Level value " << levelNum;
+        UCI::loop (lvl_uci.str ());
+        dgtnixPrintMessageOnClock ("    ok", true, false);
+        mainMenu = DEFAULT;
+      }
+  }
+
+  void operateMainMenu()
+  {
+    int mainMenuItem = (int) mainMenu;
+    ++mainMenuItem;
+    if (mainMenuItem >=((int) MAX_MAIN))
+      {
+        mainMenuItem = 0;
+        dgtnixPrintMessageOnClock ("  home", true, false);
+      }
+    mainMenu = (MainMenu) mainMenuItem;
+
+  }
+
+  void operatePositionMenu(MenuOperation mo, string fen)
+  {
+      int posMenuItem = (int) positionMenu;
+      if (mo == INC)
+        {
+          ++posMenuItem;
+          if (posMenuItem >=((int) MAX_POSITION)) { posMenuItem = 0; }
+        }
+      else if (mo == DEC)
+        {
+          --posMenuItem;
+          if (posMenuItem <= 0) { posMenuItem = MAX_POSITION-1; }
+        }
+      positionMenu = (PositionMenu) posMenuItem;
+
+      if (positionMenu == BLACK_TO_MOVE) {
+          dgtnixPrintMessageOnClock(" black", true, false);
+        }
+      else if (positionMenu == WHITE_TO_MOVE) {
+          dgtnixPrintMessageOnClock(" white", true, false);
+        }
+      else if (positionMenu == SCAN_POSITION) {
+          dgtnixPrintMessageOnClock("  scan", true, false);
+        }
+
+      if (mo == ENABLE)
+      {
+          if (positionMenu == SCAN_POSITION)
+          {
+              string strippedFen = stripFen (fen);
+
+              // Search for both white and black kings
+              if (strippedFen.find ('K') != string::npos && strippedFen.find ('k') != string::npos)
+              {
+                  completeSetupPosition(strippedFen);
+                  mainMenu = DEFAULT;
+              }
+          }
+          else if (positionMenu == BLACK_TO_MOVE)
+          {
+            computerPlays = WHITE;
+          }
+          else if (positionMenu == WHITE_TO_MOVE)
+          {
+            computerPlays = BLACK;
+          }
+      }
+
+  }
+
+  // process clock button action. The fen is passed in for clock button actions that need to fen (such as position setup)
+  void processClockButton(string fen)
+  {
+    clockButton = (ClockButton) getClockButtonState();
+//    cout << "Clock Button ppp: ";
+    if (clockButton!=OFF)
+      {
+
+        // first level menu
+        if (mainMenu == DEFAULT)
+          {
+            if (clockButton == BACK)
+              {
+                printEngineEvalOnClock();
+                //            sleep(1);
+                // Display a hint
+                printMoveOnClock(Search::UciPvDgt.ponderMove, false);
+
+              }
+            else if (clockButton == DECREASE)
+              {
+                if (!game.empty ())
+                  {
+                    printMoveOnClock(game.back (), false);
+                  }
+                //                stringstream msg;
+                //                msg << "btn  "<< clockButton;
+                //                dgtnixPrintMessageOnClock(msg.str().c_str(), true, false);
+              }
+            else if (clockButton == HOME)
+              {
+                mainMenu = POSITION_SETUP;
+              }
+            else if (clockButton == INCREASE)
+              {
+                refreshPosition = true;
+              }
+            else if (clockButton == SELECT)
+              {
+                switch (playMode)
+                  {
+                  case GAME:
+                    switchToAnalysisMode();
+                    break;
+                  case ANALYSIS:
+                    switchToBookMode();
+                    // stop the search and restart
+                    Search::Signals.stop = true;
+                    break;
+                  case BOOK:
+                    switchToTrainMode();
+                    break;
+                  case TRAINING:
+                    switchToKibitzMode();
+                    // stop the search and restart
+                    Search::Signals.stop = true;
+                    break;
+                  case KIBITZ:
+                    switchToGameMode();
+                    break;
+                  default:
+                    switchToGameMode();
+                    break;
+                  }
+              }
+
+          } // if mainMenu == DEFAULT
+          else if (clockButton == HOME) {
+            operateMainMenu();
+          }
+
+        if (mainMenu != DEFAULT){
+
+            if (mainMenu == POSITION_SETUP ) {
+//                SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE
+                if (clockButton == HOME) {
+                    dgtnixPrintMessageOnClock(" setup", true, false);
+                  }
+                if (clockButton == INCREASE) {
+                    operatePositionMenu(INC, fen);
+                }
+
+                if (clockButton == DECREASE) {
+                    operatePositionMenu(DEC, fen);
+                }
+
+                if (clockButton == SELECT) {
+                    operatePositionMenu(ENABLE, fen);
+                }
+
+                // if increase/decrease button pressed show next sub-option
+              }
+            else if (mainMenu == LEVEL) {
+                if (clockButton == HOME)
+                  {
+                    dgtnixPrintMessageOnClock(" level", true, false);
+                  }
+
+                if (clockButton == INCREASE) {
+                    operateLevel(INC);
+                }
+
+                if (clockButton == DECREASE) {
+                    operateLevel(DEC);
+                }
+
+                if (clockButton == SELECT) {
+                    operateLevel(ENABLE);
+                }
+              }
+            else if (mainMenu == OPENING_BOOK) {
+                if (clockButton == HOME)
+                  {
+                    dgtnixPrintMessageOnClock("  book", true, false);
+                  }
+                if (clockButton == INCREASE) {
+                    operateBook(INC);
+                }
+
+                if (clockButton == DECREASE) {
+                    operateBook(DEC);
+                }
+
+                if (clockButton == SELECT) {
+                    operateBook(ENABLE);
+                }
+              }
+            else if (mainMenu == TIME_CONTROL) {
+                if (clockButton == HOME)
+                  {
+                    dgtnixPrintMessageOnClock("  time", true, false);
+                  }
+                if (clockButton == INCREASE) {
+                    operateTimeControl(INC);
+                  }
+
+                if (clockButton == DECREASE) {
+                    operateTimeControl(DEC);
+                  }
+
+                if (clockButton == SELECT) {
+                    operateTimeControl(ENABLE);
+                  }
+              }
+            else if (mainMenu == ENGINE) {
+                if (clockButton == HOME)
+                  {
+                    dgtnixPrintMessageOnClock("engine", true, false);
+                  }
+              }
+            else if (mainMenu == SYSTEM) {
+                if (clockButton == HOME)
+                  {
+                    dgtnixPrintMessageOnClock("system", true, false);
+                  }
+              }
+          } // not DEFAULT
+      } // If clockbutton !=OFF
   }
 
   void
@@ -1126,7 +1474,7 @@ namespace DGT
           }
         exit (-1);
       }
-    cout << "The board was found" << BoardDescriptor << endl;
+    cout << "The board was found - code: " << BoardDescriptor << endl;
     sleep (3);
     dgtnixUpdate ();
     dgtnixPrintMessageOnClock ("pic016", true, DGTNIX_RIGHT_DOT); //Display version number
@@ -1141,6 +1489,7 @@ namespace DGT
     string currentFEN = getDgtFEN ();
     configure (currentFEN); //useful for orientation
 
+
     // Start the wakeup thread
     pthread_t wakeUpThread;
     pthread_create (&wakeUpThread, NULL, wakeUpEverySecond, (void*) NULL);
@@ -1151,7 +1500,7 @@ namespace DGT
         Position pos;
         sem_wait (&dgtnixEventSemaphore);
         string s = getDgtFEN ();
-        processClockButton();
+        processClockButton(s);
 
         //Display time on clock
         if (clockMode == FIXEDTIME && searching && limits.movetime >= 5000) //If we are in fixed time per move mode, display computer remaining time

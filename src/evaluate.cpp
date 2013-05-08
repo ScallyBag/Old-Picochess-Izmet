@@ -642,31 +642,19 @@ Value do_evaluate(const Position& pos, Value& margin) {
                     score += RookHalfOpenFileBonus;
             }
 
-            // Penalize rooks which are trapped inside a king. Penalize more if
-            // king has lost right to castle.
             if (mob > 6 || ei.pi->file_is_half_open(Us, f))
                 continue;
 
             ksq = pos.king_square(Us);
 
-            if (    file_of(ksq) >= FILE_E
-                &&  file_of(s) > file_of(ksq)
-                && (relative_rank(Us, ksq) == RANK_1 || rank_of(ksq) == rank_of(s)))
-            {
-                // Is there a half-open file between the king and the edge of the board?
-                if (!ei.pi->has_open_file_to_right(Us, file_of(ksq)))
-                    score -= make_score(pos.can_castle(Us) ? (TrappedRookPenalty - mob * 16) / 2
-                                                           : (TrappedRookPenalty - mob * 16), 0);
-            }
-            else if (    file_of(ksq) <= FILE_D
-                     &&  file_of(s) < file_of(ksq)
-                     && (relative_rank(Us, ksq) == RANK_1 || rank_of(ksq) == rank_of(s)))
-            {
-                // Is there a half-open file between the king and the edge of the board?
-                if (!ei.pi->has_open_file_to_left(Us, file_of(ksq)))
-                    score -= make_score(pos.can_castle(Us) ? (TrappedRookPenalty - mob * 16) / 2
-                                                           : (TrappedRookPenalty - mob * 16), 0);
-            }
+            // Penalize rooks which are trapped inside a king. Penalize more if
+            // king has lost right to castle.
+            if (   ((file_of(ksq) < FILE_E) == (file_of(s) < file_of(ksq)))
+                && rank_of(ksq) == rank_of(s)
+                && relative_rank(Us, ksq) == RANK_1
+                && !ei.pi->has_open_file_on_side(Us, file_of(ksq), file_of(ksq) < FILE_E))
+                score -= make_score(pos.can_castle(Us) ? (TrappedRookPenalty - mob * 16) / 2
+                                                       : (TrappedRookPenalty - mob * 16), 0);
         }
     }
 
@@ -689,8 +677,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
     Score score = SCORE_ZERO;
 
     // Undefended minors get penalized even if not under attack
-    undefendedMinors =  pos.pieces(Them)
-                      & (pos.pieces(BISHOP) | pos.pieces(KNIGHT))
+    undefendedMinors =  pos.pieces(Them, BISHOP, KNIGHT)
                       & ~ei.attackedBy[Them][ALL_PIECES];
 
     if (undefendedMinors)
@@ -730,7 +717,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
     Score score = mobility = SCORE_ZERO;
 
     // Do not include in mobility squares protected by enemy pawns or occupied by our pieces
-    const Bitboard mobilityArea = ~(ei.attackedBy[Them][PAWN] | pos.pieces(Us));
+    const Bitboard mobilityArea = ~(ei.attackedBy[Them][PAWN] | pos.pieces(Us, PAWN, KING));
 
     score += evaluate_pieces<KNIGHT, Us, Trace>(pos, ei, mobility, mobilityArea);
     score += evaluate_pieces<BISHOP, Us, Trace>(pos, ei, mobility, mobilityArea);

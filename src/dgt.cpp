@@ -108,7 +108,7 @@ namespace DGT
 
   enum PositionMenu
   {
-     SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, MAX_POSITION
+     SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION, MAX_POSITION
   } positionMenu;
 
   int levelNum;
@@ -345,6 +345,17 @@ namespace DGT
         clockMode = FIXEDTIME;
       }
     resetClock();
+  }
+
+  void stopThinking()
+  {
+      // Get out of infinite analysis and stop thinking
+      if (clockMode == INFINITE)
+      {
+          clockMode = FIXEDTIME;
+      }
+      UCI::loop ("stop"); //stop the current search
+      searching = false;
   }
 
   void switchToKibitzMode()
@@ -629,6 +640,13 @@ namespace DGT
       }
   }
 
+  void reverseBoard()
+  {
+    dgtnixSetOption (DGTNIX_BOARD_ORIENTATION, boardReversed ? DGTNIX_BOARD_ORIENTATION_CLOCKLEFT : DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
+    boardReversed = !boardReversed;
+    sem_post (&dgtnixEventSemaphore);
+  }
+
   void
   configure (string fen)
   {
@@ -782,9 +800,7 @@ namespace DGT
     //board orientation
     if (fen == "RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr w KQkq - 0 1" || fen == "8/8/8/8/8/8/8/q6q w KQkq - 0 1" || fen == "Q6Q/8/8/8/8/8/8/8 w KQkq - 0 1")
       {
-        dgtnixSetOption (DGTNIX_BOARD_ORIENTATION, boardReversed ? DGTNIX_BOARD_ORIENTATION_CLOCKLEFT : DGTNIX_BOARD_ORIENTATION_CLOCKRIGHT);
-        boardReversed = !boardReversed;
-        sem_post (&dgtnixEventSemaphore); //trigger new game start
+        reverseBoard(); //trigger new game start
       }
 
     // Setup Custom position - white to move
@@ -1027,13 +1043,11 @@ namespace DGT
         //        cout <<"\n";
         if ((clockMode == INFINITE || playMode==KIBITZ) && searching)
           {
-            sleep (1);
             // Dont show analysis if there is no longer a search
             if (!searching) continue;
-            //            cout << "Infinite analysis!\n";
+            sleep (1);
 
             printEngineEvalOnClock();
-
             stringstream s_depth;
             s_depth << Search::UciPvDgt.depth;
             string depth_str = s_depth.str ();
@@ -1246,6 +1260,10 @@ namespace DGT
       else if (positionMenu == WHITE_TO_MOVE) {
           dgtnixPrintMessageOnClock(" white", true, false);
         }
+      else if (positionMenu == REVERSE_ORIENTATION) {
+          dgtnixPrintMessageOnClock("revers", true, false);
+
+      }
       else if (positionMenu == SCAN_POSITION) {
           dgtnixPrintMessageOnClock("  scan", true, false);
         }
@@ -1271,6 +1289,12 @@ namespace DGT
           {
             computerPlays = BLACK;
           }
+          else if (positionMenu == REVERSE_ORIENTATION) {
+//              cout << "\n current FEN "<< getDgtFEN();
+              reverseBoard();
+//              cout << "\n new FEN "<< getDgtFEN();
+            }
+
       }
 
   }
@@ -1342,8 +1366,10 @@ namespace DGT
               }
 
           } // if mainMenu == DEFAULT
-          else if (clockButton == HOME) {
+          else if (clockButton == HOME) {            
             operateMainMenu();
+            // Stop thinking when the middle button is pressed
+            stopThinking();
           }
 
         if (mainMenu != DEFAULT){
@@ -1488,7 +1514,6 @@ namespace DGT
     // Get the first board state
     string currentFEN = getDgtFEN ();
     configure (currentFEN); //useful for orientation
-
 
     // Start the wakeup thread
     pthread_t wakeUpThread;

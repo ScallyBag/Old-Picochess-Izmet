@@ -27,8 +27,6 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-// TB
-#include "tbprobe.h"
 
 
 int main(int argc, char* argv[]) {
@@ -43,9 +41,6 @@ int main(int argc, char* argv[]) {
   Eval::init();
   Threads.init();
   TT.set_size(Options["Hash"]);
-  // TB
-  tb_max_pieces_found=0;
-  init_tablebases();
 
   std::string args;
 

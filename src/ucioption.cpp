@@ -89,6 +89,8 @@ void init(OptionsMap& o) {
   o["Slow Mover"]                  = Option(100, 10, 1000);
   o["UCI_Chess960"]                = Option(false);
   o["UCI_AnalyseMode"]             = Option(false, on_eval);
+  o["RTB DTZ Path"]         = Option("");
+  o["RTB WDL Path"]         = Option("");
 }
 
 

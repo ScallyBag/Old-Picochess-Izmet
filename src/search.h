@@ -102,6 +102,7 @@ extern Position RootPos;
 extern Color RootColor;
 extern Time::point SearchTime;
 extern StateStackPtr SetupStates;
+extern uint64_t tbhits;
 
 extern void init();
 extern size_t perft(Position& pos, Depth depth);

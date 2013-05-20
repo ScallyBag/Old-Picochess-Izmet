@@ -48,7 +48,9 @@ namespace Search {
   Color RootColor;
   Time::point SearchTime;
   StateStackPtr SetupStates;
+  //TB
   int use_tb;
+  uint64_t tbhits;
 }
 
 using std::string;
@@ -190,6 +192,7 @@ void Search::think() {
 
   RootColor = RootPos.side_to_move();
   TimeMgr.init(Limits, RootPos.game_ply(), RootColor);
+  tbhits=0; //TB
 
   if (RootMoves.empty())
   {
@@ -626,6 +629,7 @@ namespace {
       int success;
       int v = probe_wdl(pos, &success);
       if (success) {
+	tbhits++;
 	if (v < -1) value = -VALUE_MATE + MAX_PLY + ss->ply;
 	else if (v > 1) value = VALUE_MATE - MAX_PLY - ss->ply;
 	else value = VALUE_DRAW + v;
@@ -860,7 +864,8 @@ split_point_start: // At split points actual search starts from here
           if (thisThread == Threads.main_thread() && Time::now() - SearchTime > 3000)
               sync_cout << "info depth " << depth / ONE_PLY
                         << " currmove " << move_to_uci(move, pos.is_chess960())
-                        << " currmovenumber " << moveCount + PVIdx << sync_endl;
+                        << " currmovenumber " << moveCount + PVIdx 
+                        << " tbhits " << tbhits << sync_endl;
       }
 
       ext = DEPTH_ZERO;
@@ -1608,6 +1613,7 @@ split_point_start: // At split points actual search starts from here
           << " nodes "     << pos.nodes_searched()
           << " nps "       << pos.nodes_searched() * 1000 / elaspsed
           << " time "      << elaspsed
+          << " tbhits "    << tbhits          
           << " multipv "   << i + 1
           << " pv";
 

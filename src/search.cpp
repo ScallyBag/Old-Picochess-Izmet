@@ -247,7 +247,7 @@ void Search::think() {
           // RootMoves now contains only moves that preserve the draw or win.
 
           // Do not probe tablebases during the search.
-          use_tb = 0;
+          use_tb = popcount<Full>(RootPos.pieces())-1;
 
           // It might be a good idea to mangle the hash key (xor it
           // with a fixed value) in order to "clear" the hash table of

@@ -294,7 +294,8 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   st->checkersBB = attackers_to(king_square(sideToMove)) & pieces(~sideToMove);
   chess960 = isChess960;
   thisThread = th;
-
+  
+  if(!pos_is_ok()) sync_cout << "info string error Invalid FEN:" << fenStr << sync_endl;
   assert(pos_is_ok());
 }
 
@@ -1461,7 +1462,7 @@ bool Position::pos_is_ok(int* failedStep) const {
   int dummy, *step = failedStep ? failedStep : &dummy;
 
   // What features of the position should be verified?
-  const bool all = false;
+  const bool all = true;
 
   const bool debugBitboards       = all || false;
   const bool debugKingCount       = all || false;

@@ -90,6 +90,7 @@ namespace {
 Endgames::Endgames() {
 
   add<KPK>("KPK");
+  add<KPPK>("KPPK");
   add<KNNK>("KNNK");
   add<KBNK>("KBNK");
   add<KRKP>("KRKP");
@@ -420,6 +421,82 @@ Value Endgame<KmmKm>::operator()(const Position&) const {
 template<>
 Value Endgame<KNNK>::operator()(const Position&) const {
   return VALUE_DRAW;
+}
+
+template<>
+Value Endgame<KPPK>::operator()(const Position& pos) const {
+	Square ourK = pos.king_square(strongerSide);
+	Square enemyK = pos.king_square(weakerSide);
+
+	Rank ekRank = relative_rank(strongerSide, enemyK);
+
+	Square alphaPawn = pos.piece_list(strongerSide, PAWN)[0];
+	Square betaPawn = pos.piece_list(strongerSide, PAWN)[1];
+
+	File alphaFile = file_of(alphaPawn);
+	File betaFile = file_of(betaPawn);
+
+	Rank alphaRank = relative_rank(strongerSide, alphaPawn);
+	Rank betaRank = relative_rank(strongerSide, betaPawn);
+
+	int fileDif = std::abs((int)(alphaFile - betaFile));
+
+	Value eval = Value(-99999999); //Used for checking unset
+
+	// Stacked Pawns
+	if(fileDif == 0) {
+		eval = VALUE_DRAW + 30 * std::max(alphaRank, betaRank);
+	}
+
+	//Twin Pawns
+	if(fileDif == 1) {
+		if(!((alphaRank > betaRank && (ekRank < alphaRank || ekRank > (alphaRank + 1))) || // If the enemy king is blocking
+			(betaRank > alphaRank && (ekRank < betaRank || ekRank > (betaRank + 1))))) {   // the lead pawn, it is a win
+			
+			int ourDistance = 0;
+			int theirDistance = 0;
+
+			if(alphaRank > betaRank) {
+				ourDistance = SquareDistance[alphaPawn][ourK];
+				theirDistance = SquareDistance[alphaPawn][enemyK];
+			}
+
+			else if(betaRank > alphaRank) {
+				ourDistance = SquareDistance[betaPawn][ourK];
+				theirDistance = SquareDistance[betaPawn][enemyK];
+			}
+
+			if(theirDistance < ourDistance / 3) {
+				eval =  VALUE_DRAW + Value(400); // If they are 3x closer than us, it may be a draw
+			}
+		} if(eval == Value(-99999999))
+			eval = VALUE_KNOWN_WIN - (4 * (8 - alphaRank) * (8 - betaRank));
+	}
+
+	if(fileDif == 2) {
+		if(alphaRank == betaRank) {
+			if(std::min<int>(SquareDistance[alphaPawn][ourK], SquareDistance[betaPawn][ourK] > 3)) {
+				File enemyFile = file_of(enemyK);
+				
+				if(rank_of(enemyK) == alphaRank && (2 * enemyFile - alphaFile  - betaFile) == 0 )
+					eval = VALUE_DRAW; //King samwiched by pawns is draw when the stronger king is far.
+			}
+		}
+
+		if(eval == Value(-99999999))
+			eval = VALUE_KNOWN_WIN - (10 * (8 - alphaRank) * (8 - betaRank));
+	}
+
+	if (fileDif > 2) {
+		eval = VALUE_KNOWN_WIN - (5 * (8 - alphaRank) * (8 - betaRank));
+	}
+
+	if(eval == Value(-99999999)) { //No set value
+		assert(false);
+		return VALUE_DRAW;
+	}
+
+	return strongerSide == pos.side_to_move() ? eval : -eval;
 }
 
 /// K, bishop and one or more pawns vs K. It checks for draws with rook pawns and

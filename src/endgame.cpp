@@ -445,7 +445,7 @@ Value Endgame<KPPK>::operator()(const Position& pos) const {
 
 	// Stacked Pawns
 	if(fileDif == 0) {
-		eval = VALUE_DRAW + 30 * std::max(alphaRank, betaRank);
+		eval = VALUE_DRAW + 27 * std::max(alphaRank, betaRank);
 	}
 
 	//Twin Pawns
@@ -470,7 +470,7 @@ Value Endgame<KPPK>::operator()(const Position& pos) const {
 				eval =  VALUE_DRAW + Value(400); // If they are 3x closer than us, it may be a draw
 			}
 		} if(eval == Value(-99999999))
-			eval = VALUE_KNOWN_WIN - (4 * (8 - alphaRank) * (8 - betaRank));
+			eval = VALUE_KNOWN_WIN - (2 * (8 - alphaRank) * (8 - betaRank));
 	}
 
 	if(fileDif == 2) {
@@ -484,11 +484,11 @@ Value Endgame<KPPK>::operator()(const Position& pos) const {
 		}
 
 		if(eval == Value(-99999999))
-			eval = VALUE_KNOWN_WIN - (10 * (8 - alphaRank) * (8 - betaRank));
+			eval = VALUE_KNOWN_WIN - (2 * (8 - alphaRank) * (8 - betaRank));
 	}
 
 	if (fileDif > 2) {
-		eval = VALUE_KNOWN_WIN - (5 * (8 - alphaRank) * (8 - betaRank));
+		eval = VALUE_KNOWN_WIN - (2 * (8 - alphaRank) * (8 - betaRank));
 	}
 
 	if(eval == Value(-99999999)) { //No set value

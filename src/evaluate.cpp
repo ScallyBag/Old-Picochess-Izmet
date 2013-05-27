@@ -72,10 +72,10 @@ namespace {
   };
 
   // Evaluation grain size, must be a power of 2
-  const int GrainSize = 8;
+  const int GrainSize = 4;
 
   // Evaluation weights, initialized from UCI options
-  enum { Mobility, PassedPawns, Space, KingDangerUs, KingDangerThem };
+  enum { Mobility, PawnStructure, PassedPawns, Space, KingDangerUs, KingDangerThem };
   Score Weights[6];
 
   typedef Value V;
@@ -88,7 +88,7 @@ namespace {
   //
   // Values modified by Joona Kiiski
   const Score WeightsInternal[] = {
-      S(289, 344), S(221, 273), S(46, 0), S(271, 0), S(307, 0)
+      S(289, 344), S(233, 201), S(221, 273), S(46, 0), S(271, 0), S(307, 0)
   };
 
   // MobilityBonus[PieceType][attacked] contains mobility bonuses for middle and
@@ -237,18 +237,19 @@ namespace {
   template<Color Us, bool Trace>
   Score evaluate_king(const Position& pos, EvalInfo& ei, Value margins[]);
 
-  template<Color Us>
+  template<Color Us, bool Trace>
   Score evaluate_threats(const Position& pos, EvalInfo& ei);
+
+  template<Color Us, bool Trace>
+  Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei);
 
   template<Color Us>
   int evaluate_space(const Position& pos, EvalInfo& ei);
 
-  template<Color Us>
-  Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei);
-
   Score evaluate_unstoppable_pawns(const Position& pos, EvalInfo& ei);
 
   Value interpolate(const Score& v, Phase ph, ScaleFactor sf);
+  Score apply_weight(Score v, Score w);
   Score weight_option(const std::string& mgOpt, const std::string& egOpt, Score internalWeight);
   double to_cp(Value v);
   void trace_add(int idx, Score term_w, Score term_b = SCORE_ZERO);
@@ -272,8 +273,9 @@ namespace Eval {
 
   void init() {
 
-    Weights[Mobility]       = weight_option("Mobility (Middle Game)", "Mobility (Endgame)", WeightsInternal[Mobility]);
-    Weights[PassedPawns]    = weight_option("Passed Pawns (Middle Game)", "Passed Pawns (Endgame)", WeightsInternal[PassedPawns]);
+    Weights[Mobility]       = weight_option("Mobility (Midgame)", "Mobility (Endgame)", WeightsInternal[Mobility]);
+    Weights[PawnStructure]  = weight_option("Pawn Structure (Midgame)", "Pawn Structure (Endgame)", WeightsInternal[PawnStructure]);
+    Weights[PassedPawns]    = weight_option("Passed Pawns (Midgame)", "Passed Pawns (Endgame)", WeightsInternal[PassedPawns]);
     Weights[Space]          = weight_option("Space", "Space", WeightsInternal[Space]);
     Weights[KingDangerUs]   = weight_option("Cowardice", "Cowardice", WeightsInternal[KingDangerUs]);
     Weights[KingDangerThem] = weight_option("Aggressiveness", "Aggressiveness", WeightsInternal[KingDangerThem]);
@@ -374,7 +376,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
 
   // Probe the pawn hash table
   ei.pi = Pawns::probe(pos, th->pawnsTable);
-  score += ei.pi->pawns_value();
+  score += apply_weight(ei.pi->pawns_value(), Weights[PawnStructure]);
 
   // Initialize attack and king safety bitboards
   init_eval_info<WHITE>(pos, ei);
@@ -392,12 +394,12 @@ Value do_evaluate(const Position& pos, Value& margin) {
           - evaluate_king<BLACK, Trace>(pos, ei, margins);
 
   // Evaluate tactical threats, we need full attack information including king
-  score +=  evaluate_threats<WHITE>(pos, ei)
-          - evaluate_threats<BLACK>(pos, ei);
+  score +=  evaluate_threats<WHITE, Trace>(pos, ei)
+          - evaluate_threats<BLACK, Trace>(pos, ei);
 
   // Evaluate passed pawns, we need full attack information including king
-  score +=  evaluate_passed_pawns<WHITE>(pos, ei)
-          - evaluate_passed_pawns<BLACK>(pos, ei);
+  score +=  evaluate_passed_pawns<WHITE, Trace>(pos, ei)
+          - evaluate_passed_pawns<BLACK, Trace>(pos, ei);
 
   // If one side has only a king, check whether exists any unstoppable passed pawn
   if (!pos.non_pawn_material(WHITE) || !pos.non_pawn_material(BLACK))
@@ -444,9 +446,6 @@ Value do_evaluate(const Position& pos, Value& margin) {
       trace_add(PST, pos.psq_score());
       trace_add(IMBALANCE, ei.mi->material_value());
       trace_add(PAWN, ei.pi->pawns_value());
-      trace_add(MOBILITY, apply_weight(mobilityWhite, Weights[Mobility]), apply_weight(mobilityBlack, Weights[Mobility]));
-      trace_add(THREAT, evaluate_threats<WHITE>(pos, ei), evaluate_threats<BLACK>(pos, ei));
-      trace_add(PASSED, evaluate_passed_pawns<WHITE>(pos, ei), evaluate_passed_pawns<BLACK>(pos, ei));
       trace_add(UNSTOPPABLE, evaluate_unstoppable_pawns(pos, ei));
       Score w = make_score(ei.mi->space_weight() * evaluate_space<WHITE>(pos, ei), 0);
       Score b = make_score(ei.mi->space_weight() * evaluate_space<BLACK>(pos, ei), 0);
@@ -631,7 +630,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
   // evaluate_threats<>() assigns bonuses according to the type of attacking piece
   // and the type of attacked one.
 
-  template<Color Us>
+  template<Color Us, bool Trace>
   Score evaluate_threats(const Position& pos, EvalInfo& ei) {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
@@ -651,20 +650,22 @@ Value do_evaluate(const Position& pos, Value& margin) {
                  & ~ei.attackedBy[Them][PAWN]
                  & ei.attackedBy[Us][ALL_PIECES];
 
-    if (!weakEnemies)
-        return score;
-
     // Add bonus according to type of attacked enemy piece and to the
     // type of attacking piece, from knights to queens. Kings are not
     // considered because are already handled in king evaluation.
-    for (PieceType pt1 = KNIGHT; pt1 < KING; pt1++)
-    {
-        b = ei.attackedBy[Us][pt1] & weakEnemies;
-        if (b)
-            for (PieceType pt2 = PAWN; pt2 < KING; pt2++)
-                if (b & pos.pieces(pt2))
-                    score += ThreatBonus[pt1][pt2];
-    }
+    if (weakEnemies)
+        for (PieceType pt1 = KNIGHT; pt1 < KING; pt1++)
+        {
+            b = ei.attackedBy[Us][pt1] & weakEnemies;
+            if (b)
+                for (PieceType pt2 = PAWN; pt2 < KING; pt2++)
+                    if (b & pos.pieces(pt2))
+                        score += ThreatBonus[pt1][pt2];
+        }
+
+    if (Trace)
+        TracedScores[Us][THREAT] = score;
+
     return score;
   }
 
@@ -691,6 +692,9 @@ Value do_evaluate(const Position& pos, Value& margin) {
     ei.attackedBy[Us][ALL_PIECES] =   ei.attackedBy[Us][PAWN]   | ei.attackedBy[Us][KNIGHT]
                                     | ei.attackedBy[Us][BISHOP] | ei.attackedBy[Us][ROOK]
                                     | ei.attackedBy[Us][QUEEN]  | ei.attackedBy[Us][KING];
+    if (Trace)
+        TracedScores[Us][MOBILITY] = apply_weight(mobility, Weights[Mobility]);
+
     return score;
   }
 
@@ -810,7 +814,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
 
   // evaluate_passed_pawns<>() evaluates the passed pawns of the given color
 
-  template<Color Us>
+  template<Color Us, bool Trace>
   Score evaluate_passed_pawns(const Position& pos, EvalInfo& ei) {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
@@ -820,10 +824,8 @@ Value do_evaluate(const Position& pos, Value& margin) {
 
     b = ei.pi->passed_pawns(Us);
 
-    if (!b)
-        return SCORE_ZERO;
-
-    do {
+    while (b)
+    {
         Square s = pop_lsb(&b);
 
         assert(pos.pawn_is_passed(Us, s));
@@ -902,7 +904,10 @@ Value do_evaluate(const Position& pos, Value& margin) {
         }
         score += make_score(mbonus, ebonus);
 
-    } while (b);
+    }
+
+    if (Trace)
+        TracedScores[Us][PASSED] = apply_weight(score, Weights[PassedPawns]);
 
     // Add the scores to the middle game and endgame eval
     return apply_weight(score, Weights[PassedPawns]);
@@ -1116,6 +1121,11 @@ Value do_evaluate(const Position& pos, Value& margin) {
     return Value((result + GrainSize / 2) & ~(GrainSize - 1));
   }
 
+  // apply_weight() weights score v by score w trying to prevent overflow
+  Score apply_weight(Score v, Score w) {
+    return make_score((int(mg_value(v)) * mg_value(w)) / 0x100,
+                      (int(eg_value(v)) * eg_value(w)) / 0x100);
+  }
 
   // weight_option() computes the value of an evaluation weight, by combining
   // two UCI-configurable weights (midgame and endgame) with an internal weight.

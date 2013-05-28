@@ -445,7 +445,20 @@ Value Endgame<KPPK>::operator()(const Position& pos) const {
 
 	// Stacked Pawns
 	if(fileDif == 0) {
-		eval = VALUE_DRAW + 27 * std::max(alphaRank, betaRank);
+		Square endSquare = alphaFile | (relative_rank(strongerSide, RANK_8));
+
+		Square mostAdvanced = ((alphaRank > betaRank) ? alphaPawn : betaPawn);
+
+		bool closerKing = std::min<int>(SquareDistance[endSquare][ourK], SquareDistance[endSquare][mostAdvanced]) < SquareDistance[endSquare][enemyK];
+		
+		if(!closerKing && (alphaFile == FILE_A || alphaFile == FILE_H)) {
+			eval = VALUE_DRAW;
+		} else if(closerKing) {
+			eval = VALUE_KNOWN_WIN - 3 * std::max(alphaRank, betaRank);
+		}
+
+		if(eval == Value(-99999999))
+			eval = VALUE_DRAW + 27 * std::max(alphaRank, betaRank);
 	}
 
 	//Twin Pawns
@@ -478,8 +491,10 @@ Value Endgame<KPPK>::operator()(const Position& pos) const {
 			if(std::min<int>(SquareDistance[alphaPawn][ourK], SquareDistance[betaPawn][ourK] > 3)) {
 				File enemyFile = file_of(enemyK);
 				
-				if(rank_of(enemyK) == alphaRank && (2 * enemyFile - alphaFile  - betaFile) == 0 )
-					eval = VALUE_DRAW; //King samwiched by pawns is draw when the stronger king is far.
+				if(rank_of(enemyK) == alphaRank && (2 * enemyFile - alphaFile  - betaFile) == 0) {
+					if(alphaRank >= RANK_7) //When on the last rank, white can still win
+						eval = VALUE_DRAW; //King samwiched by pawns is draw when the stronger king is far.
+				}
 			}
 		}
 

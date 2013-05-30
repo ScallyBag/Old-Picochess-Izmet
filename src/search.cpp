@@ -505,6 +505,7 @@ namespace {
     bool inCheck, givesCheck, pvMove, singularExtensionNode;
     bool captureOrPromotion, dangerous, doFullDepthSearch;
     int moveCount, playedMoveCount;
+    Material::Entry *mi;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -589,6 +590,13 @@ namespace {
         }
         return ttValue;
     }
+
+    // Step 4.5 Probe endgame knowledge base
+    // If we have a specialized evaluation function for the current material
+    // configuration, call it and return.
+    mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames);
+    if (mi->specialized_eval_exists())
+      return mi->evaluate(pos);
 
     // Step 5. Evaluate the position statically and update parent's gain statistics
     if (inCheck)

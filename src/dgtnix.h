@@ -94,6 +94,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define __DGTNIX_H
 
 #include <semaphore.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -185,13 +186,14 @@ extern "C" {
    */
   int dgtnixClose();
   
-  /* const char *dgtnixGetBoard();
+  /* const char *dgtnixGetBoard(bool update);
+   * The update flag updates the board in case of a reverse orientation
    * Return a copy of the representation of the board
    *
    * Return :
    * + a char[64], the representation of the board. 
    */
-  const char *dgtnixGetBoard();
+  const char *dgtnixGetBoard(bool update);
   
   /* void dgtnixDumpBoard(const char *board, char *dst);
    * Fill dst with a printable representation of the board 

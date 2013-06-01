@@ -195,7 +195,7 @@ namespace DGT
   string
   getDgtFEN (char tomove = 'w')
   {
-    const char *board = dgtnixGetBoard ();
+    const char *board = dgtnixGetBoard (false);
     char FEN[90];
     int pos = 0;
     int empty = 0;
@@ -1290,10 +1290,10 @@ namespace DGT
             computerPlays = BLACK;
           }
           else if (positionMenu == REVERSE_ORIENTATION) {
-//              cout << "\n current FEN "<< getDgtFEN();
               reverseBoard();
-//              cout << "\n new FEN "<< getDgtFEN();
-            }
+              // Update board representation after reversing
+              dgtnixGetBoard(true);
+          }
 
       }
 
@@ -1503,7 +1503,7 @@ namespace DGT
     cout << "The board was found - code: " << BoardDescriptor << endl;
     sleep (3);
     dgtnixUpdate ();
-    dgtnixPrintMessageOnClock ("pic016", true, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock ("pic017", true, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop ("setoption name Hash value 512");
@@ -1549,6 +1549,7 @@ namespace DGT
             currentFEN = s;
 
             cout << currentFEN << endl;
+
             configure (currentFEN); //on board configuration
 
             pos.set(getStartFEN (), false, Threads.main_thread ()); // The root position

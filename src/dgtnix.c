@@ -955,19 +955,19 @@ static int _readMessageFromBoard()
     case _DGTNIX_BOARD_DUMP:
       _debug("Received _DGTNIX_BOARD_DUMP from the board\n");
       pthread_mutex_lock( &g_mutex );
-      for (j = 0; j < 64; j++) 
-	{
-	  g_board[j] = g_readBuffer[j];
-	  
-	}
+      for (j = 0; j < 64; j++)
+      {
+          g_board[j] = g_readBuffer[j];
+
+      }
       pthread_mutex_unlock( &g_mutex );
       if(! (g_debugMode  ==  DGTNIX_DEBUG_OFF) )
-	_dumpBoard(g_board);
+          _dumpBoard(g_board);
       g_boardUpdated=1;
       break;
     case _DGTNIX_BWTIME:
-      if(g_debugMode  ==  DGTNIX_DEBUG_WITH_TIME) 
-	_debug("Received _DGTNIX_BWTIME from the board\n");
+      if(g_debugMode  ==  DGTNIX_DEBUG_WITH_TIME)
+          _debug("Received _DGTNIX_BWTIME from the board\n");
       _bwtimeReceived(g_readBuffer);
       break;
     case _DGTNIX_FIELD_UPDATE:
@@ -986,7 +986,7 @@ static int _readMessageFromBoard()
     case _DGTNIX_SERIALNR:
       _debug("Received _DGTNIX_SERIALNR from the board\n");
       for (j = 0; j < messageLength; j++)
-	g_serialBuffer[j] = g_readBuffer[j];
+          g_serialBuffer[j] = g_readBuffer[j];
       g_serialBuffer[messageLength]='\0';
       g_serialFlag=1;
       _debug("serial number %s\n",  g_serialBuffer);
@@ -994,7 +994,7 @@ static int _readMessageFromBoard()
     case _DGTNIX_TRADEMARK:
       _debug("Received _DGTNIX_TRADEMARK from the board\n");
       for (j = 0; j < messageLength; j++)
-	g_trademarkBuffer[j] = g_readBuffer[j];
+          g_trademarkBuffer[j] = g_readBuffer[j];
       g_trademarkBuffer[messageLength]='\0';
       g_trademarkFlag=1;
       _debug("trademark %s:\n", g_trademarkBuffer);
@@ -1378,11 +1378,14 @@ int dgtnixTestBoard(const char *board)
   return 1;
 }
 
-const char *dgtnixGetBoard()
+const char *dgtnixGetBoard(bool update)
 {
   int i;
   _assertDriverInitialised("dgtnixGetBoard");
   pthread_mutex_lock( &g_mutex );
+  if (update) {
+      g_boardUpdated = 1;
+  }
   if(g_boardUpdated)
     {
       for(i=0; i<64;i++)

@@ -1214,7 +1214,6 @@ namespace DGT
         --levelNum;
         if (levelNum<0) { levelNum = 20;}
       }
-    dgtnixPrintMessageOnClock (lvl.str ().c_str (), true, false);
 
     if (mo == ENABLE)
       {
@@ -1224,6 +1223,9 @@ namespace DGT
         dgtnixPrintMessageOnClock ("    ok", true, false);
         mainMenu = DEFAULT;
       }
+    else {
+        dgtnixPrintMessageOnClock (lvl.str ().c_str (), true, false);
+    }
   }
 
   void operateMainMenu()

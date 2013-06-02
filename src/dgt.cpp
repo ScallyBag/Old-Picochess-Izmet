@@ -1202,7 +1202,7 @@ namespace DGT
   void operateLevel(MenuOperation mo)
   {
     stringstream lvl;
-    lvl << "lvl" << setw(3) << levelNum;
+
     if (mo == INC)
       {
         ++levelNum;
@@ -1214,6 +1214,7 @@ namespace DGT
         --levelNum;
         if (levelNum<0) { levelNum = 20;}
       }
+    lvl << "lvl" << setw(3) << levelNum;
 
     if (mo == ENABLE)
       {

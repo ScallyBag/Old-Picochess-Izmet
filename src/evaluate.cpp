@@ -363,7 +363,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
   score = pos.psq_score() + (pos.side_to_move() == WHITE ? Tempo : -Tempo);
 
   // Probe the material hash table
-  ei.mi = Material::probe(pos, th->materialTable, th->endgames);
+  ei.mi = Material::probe(pos, th->materialTable, th->endgames, th->knowledgeBases);
   score += ei.mi->material_value();
 
   // If we have a specialized evaluation function for the current material

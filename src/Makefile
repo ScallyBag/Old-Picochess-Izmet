@@ -38,8 +38,8 @@ BINDIR = $(PREFIX)/bin
 PGOBENCH = ./$(EXE) bench 32 1 10 default depth
 
 ### Object files
-OBJS = benchmark.o bitbase.o bitboard.o book.o endgame.o evaluate.o main.o \
-	material.o misc.o movegen.o movepick.o notation.o pawns.o position.o \
+OBJS = benchmark.o bitbase.o bitboard.o book.o endgame.o evaluate.o knowledgebase.o\
+	main.o material.o misc.o movegen.o movepick.o notation.o pawns.o position.o \
 	search.o thread.o timeman.o tt.o uci.o ucioption.o
 
 ### ==========================================================================
@@ -196,7 +196,7 @@ endif
 
 ifeq ($(COMP),mingw)
 	comp=mingw
-	CXX=g++
+	CXX=x86_64-w64-mingw32-g++
 	profile_prepare = gcc-profile-prepare
 	profile_make = gcc-profile-make
 	profile_use = gcc-profile-use

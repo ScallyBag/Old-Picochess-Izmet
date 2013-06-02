@@ -139,7 +139,7 @@ namespace Material {
 /// already present in the table, it is computed and stored there, so we don't
 /// have to recompute everything when the same material configuration occurs again.
 
-Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
+Entry* probe(const Position& pos, Table& entries, Endgames& endgames, KnowledgeBases& knowledgeBases) {
 
   Key key = pos.material_key();
   Entry* e = entries[key];
@@ -154,6 +154,9 @@ Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
   e->key = key;
   e->factor[WHITE] = e->factor[BLACK] = (uint8_t)SCALE_FACTOR_NORMAL;
   e->gamePhase = game_phase(pos);
+
+  // Search for a specialized knowledge probing function
+  e->knowledgeProbeFunction=knowledgeBases.probe(key);
 
   // Let's look if we have a specialized evaluation function for this
   // particular material configuration. First we look for a fixed

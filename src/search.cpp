@@ -592,11 +592,13 @@ namespace {
     }
 
     // Step 4.5 Probe endgame knowledge base
-    // If we have a specialized evaluation function for the current material
+    // If we have a specialized probe function for the current material
     // configuration, call it and return.
-    mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames);
-    if (mi->specialized_eval_exists())
-      return mi->evaluate(pos);
+    Value probeValue;
+    mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
+    if (mi->knowledge_probe_exists())
+      if(mi->knowledge_probe(pos,probeValue))
+        return probeValue;
 
     // Step 5. Evaluate the position statically and update parent's gain statistics
     if (inCheck)

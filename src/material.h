@@ -20,6 +20,7 @@
 #if !defined(MATERIAL_H_INCLUDED)
 #define MATERIAL_H_INCLUDED
 
+#include "knowledgebase.h"
 #include "endgame.h"
 #include "misc.h"
 #include "position.h"
@@ -43,6 +44,8 @@ struct Entry {
   Phase game_phase() const { return gamePhase; }
   bool specialized_eval_exists() const { return evaluationFunction != NULL; }
   Value evaluate(const Position& p) const { return (*evaluationFunction)(p); }
+  bool knowledge_probe_exists() const { return knowledgeProbeFunction != NULL; }
+  bool knowledge_probe(const Position& p, Value &v) const { return (*knowledgeProbeFunction)(p,v); }
   ScaleFactor scale_factor(const Position& pos, Color c) const;
 
   Key key;
@@ -50,13 +53,14 @@ struct Entry {
   uint8_t factor[COLOR_NB];
   EndgameBase<Value>* evaluationFunction;
   EndgameBase<ScaleFactor>* scalingFunction[COLOR_NB];
+  KnowledgeProbeFunction knowledgeProbeFunction;
   int spaceWeight;
   Phase gamePhase;
 };
 
 typedef HashTable<Entry, 8192> Table;
 
-Entry* probe(const Position& pos, Table& entries, Endgames& endgames);
+Entry* probe(const Position& pos, Table& entries, Endgames& endgames, KnowledgeBases& knowledgeBases);
 Phase game_phase(const Position& pos);
 
 /// Material::scale_factor takes a position and a color as input, and

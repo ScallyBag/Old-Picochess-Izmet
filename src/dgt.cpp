@@ -1310,7 +1310,7 @@ namespace DGT
         // first level menu
         if (mainMenu == DEFAULT)
           {
-            if (clockButton == BACK)
+            if (clockButton == DECREASE)
               {
                 printEngineEvalOnClock();
                 //            sleep(1);
@@ -1318,7 +1318,7 @@ namespace DGT
                 printMoveOnClock(Search::UciPvDgt.ponderMove, false);
 
               }
-            else if (clockButton == DECREASE)
+            else if (clockButton == BACK)
               {
                 if (!game.empty ())
                   {

@@ -596,7 +596,7 @@ namespace {
     // configuration, call it and return.
     Value probeValue;
     mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
-    if (mi->knowledge_probe_exists() && ss->ply>1 )
+    if (mi->knowledge_probe_exists() && ss->ply>12 && !inCheck)
       if(mi->knowledge_probe(pos,probeValue))
         { 
           ss->currentMove = MOVE_NONE;

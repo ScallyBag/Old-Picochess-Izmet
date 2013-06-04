@@ -596,9 +596,12 @@ namespace {
     // configuration, call it and return.
     Value probeValue;
     mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
-    if (mi->knowledge_probe_exists())
+    if (mi->knowledge_probe_exists() && ss->ply>1 )
       if(mi->knowledge_probe(pos,probeValue))
-        return probeValue;
+        { 
+          ss->currentMove = MOVE_NONE;
+          return probeValue;
+        }
 
     // Step 5. Evaluate the position statically and update parent's gain statistics
     if (inCheck)

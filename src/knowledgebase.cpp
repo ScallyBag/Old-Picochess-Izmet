@@ -67,6 +67,11 @@ namespace {
     return true;
   }
 
+  bool drawIfKingNotInCorner(const Position& pos, Value &v)
+  {
+    const Bitboard corners=SquareBB[SQ_A1] | SquareBB[SQ_A8] |  SquareBB[SQ_H1] |  SquareBB[SQ_H8];
+    return (corners & pos.pieces(KING)) ? false : genericDraw(pos,v);
+  }
 
   template<Color strongerSide>
   bool KBBK(const Position& pos, Value &v)
@@ -86,6 +91,51 @@ namespace {
     v=(strongerSide == pos.side_to_move()) ? result : -result;
     return true;
   }
+  
+  /// KP vs K. This endgame is evaluated with the help of a bitbase.
+  template<Color strongerSide>
+  bool KPK(const Position& pos, Value &v) {
+    Color weakerSide=~strongerSide;
+    ((void)(weakerSide)); // Disable unused variable waring
+  
+    assert(pos.non_pawn_material(strongerSide) == VALUE_ZERO);
+    assert(pos.non_pawn_material(weakerSide) == VALUE_ZERO);
+    assert(pos.piece_count(strongerSide, PAWN) == 1);
+    assert(pos.piece_count(weakerSide, PAWN) == 0);
+  
+    Square wksq, bksq, wpsq;
+    Color us;
+  
+    if (strongerSide == WHITE)
+    {
+        wksq = pos.king_square(WHITE);
+        bksq = pos.king_square(BLACK);
+        wpsq = pos.piece_list(WHITE, PAWN)[0];
+        us   = pos.side_to_move();
+    }
+    else
+    {
+        wksq = ~pos.king_square(BLACK);
+        bksq = ~pos.king_square(WHITE);
+        wpsq = ~pos.piece_list(BLACK, PAWN)[0];
+        us   = ~pos.side_to_move();
+    }
+  
+    if (file_of(wpsq) >= FILE_E)
+    {
+        wksq = mirror(wksq);
+        bksq = mirror(bksq);
+        wpsq = mirror(wpsq);
+    }
+  
+    if (!Bitbases::probe_kpk(wksq, wpsq, bksq, us))
+        return VALUE_DRAW;
+  
+    Value result = VALUE_KNOWN_WIN + PawnValueEg + Value(rank_of(wpsq));
+  
+    v=(strongerSide == pos.side_to_move()) ? result : -result;
+    return true;
+  }
 
 } // namespace
 
@@ -102,6 +152,17 @@ KnowledgeBases::KnowledgeBases()
   m[key("KBK", BLACK)]=genericDraw;
   m[key("KNK", WHITE)]=genericDraw;
   m[key("KNK", BLACK)]=genericDraw;
+  m[key("KPK", WHITE)]=KPK<WHITE>;
+  m[key("KPK", BLACK)]=KPK<BLACK>;
+  
+  m[key("KBKB", WHITE)]=drawIfKingNotInCorner;
+  m[key("KBKB", BLACK)]=drawIfKingNotInCorner;
+  m[key("KBKN", WHITE)]=drawIfKingNotInCorner;
+  m[key("KBKN", BLACK)]=drawIfKingNotInCorner;
+  m[key("KNKN", WHITE)]=drawIfKingNotInCorner;
+  m[key("KNKN", BLACK)]=drawIfKingNotInCorner;
+  m[key("KNNK", WHITE)]=drawIfKingNotInCorner;
+  m[key("KNNK", BLACK)]=drawIfKingNotInCorner;
 
   m[key("KBBK", WHITE)]=KBBK<WHITE>;
   m[key("KBBK", BLACK)]=KBBK<BLACK>;

@@ -62,6 +62,17 @@ namespace {
       0, 1, 2, 3, 4, 5, 6, 7
     }
   };
+  
+  const int edge_dist[64]={
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 1, 1, 1, 1, 1, 1, 0,
+      0, 1, 2, 2, 2, 2, 1, 0,
+      0, 1, 2, 3, 3, 2, 1, 0,
+      0, 1, 2, 3, 3, 2, 1, 0,
+      0, 1, 2, 2, 2, 2, 1, 0,
+      0, 1, 1, 1, 1, 1, 1, 0,
+      0, 0, 0, 0, 0, 0, 0, 0
+    };
 
   // Get the material key of a Position out of the given endgame key code
   // like "KBPKN". The trick here is to first forge an ad-hoc fen string
@@ -135,6 +146,28 @@ namespace {
     Color bishopSquareColor= (pos.pieces(strongerSide,BISHOP) & BlackSquares) ? BLACK : WHITE;
     result = BishopValueEg + KnightValueEg - 50 - 25*bishop_corner_dist[bishopSquareColor][loserKSq] - 12*square_distance(loserKSq,winnerKSq);
 
+    v=(strongerSide == pos.side_to_move()) ? result : -result;
+    return true;
+  }
+  
+  template<Color strongerSide>
+  bool KXZK(const Position& pos, Value &v)
+  {
+    Color weakerSide=~strongerSide;
+    Square winnerKSq = pos.king_square(strongerSide);
+    Square loserKSq = pos.king_square(weakerSide);
+    
+    if(   (pos.side_to_move()==weakerSide) // Dont't use this function is there is a stalemate risk
+       || (pos.pieces(strongerSide) & pos.attacks_from<KING>(loserKSq)) ) // Don't use this function if weaker side king can capture a piece
+      return false;
+    
+    Square wpsq;
+    if (strongerSide == WHITE)
+      wpsq = pos.piece_list(WHITE, PAWN)[0];
+    else
+      wpsq = ~pos.piece_list(BLACK, PAWN)[0];
+    
+    Value result=VALUE_KNOWN_WIN + 400 + 12*pos.piece_count(strongerSide,PAWN)*Value(rank_of(wpsq)) - 25*edge_dist[loserKSq] - 6*square_distance(loserKSq,winnerKSq);
     v=(strongerSide == pos.side_to_move()) ? result : -result;
     return true;
   }
@@ -215,6 +248,25 @@ KnowledgeBases::KnowledgeBases()
   m[key("KBBK", BLACK)]=KBBK<BLACK>;
   m[key("KBNK", WHITE)]=KBNK<WHITE>;
   m[key("KBNK", BLACK)]=KBNK<BLACK>;
+  
+  m[key("KQBK", WHITE)]=KXZK<WHITE>;
+  m[key("KQBK", BLACK)]=KXZK<BLACK>;
+  m[key("KQNK", WHITE)]=KXZK<WHITE>;
+  m[key("KQNK", BLACK)]=KXZK<BLACK>;
+  m[key("KQPK", WHITE)]=KXZK<WHITE>;
+  m[key("KQPK", BLACK)]=KXZK<BLACK>;
+  m[key("KQQK", WHITE)]=KXZK<WHITE>;
+  m[key("KQQK", BLACK)]=KXZK<BLACK>;
+  m[key("KQRK", WHITE)]=KXZK<WHITE>;
+  m[key("KQRK", BLACK)]=KXZK<BLACK>;
+  m[key("KRBK", WHITE)]=KXZK<WHITE>;
+  m[key("KRBK", BLACK)]=KXZK<BLACK>;
+  m[key("KRNK", WHITE)]=KXZK<WHITE>;
+  m[key("KRNK", BLACK)]=KXZK<BLACK>;
+  m[key("KRPK", WHITE)]=KXZK<WHITE>;
+  m[key("KRPK", BLACK)]=KXZK<BLACK>;
+  m[key("KRRK", WHITE)]=KXZK<WHITE>;
+  m[key("KRRK", BLACK)]=KXZK<BLACK>;
 }
 
 

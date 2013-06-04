@@ -79,14 +79,16 @@ namespace {
     Color weakerSide=~strongerSide;
     Value result;
     Bitboard bishops=pos.pieces(strongerSide, BISHOP);
+    Square winnerKSq = pos.king_square(strongerSide);
     Square loserKSq = pos.king_square(weakerSide);
+    const Bitboard edges=FileBB[0]|FileBB[7]|RankBB[0]|RankBB[7];
     
-    // Don't use this function if weaker side king can capture a bishop
-    if(bishops & pos.attacks_from<KING>(loserKSq))
+    if(   (bishops & pos.attacks_from<KING>(loserKSq)) // Don't use this function if weaker side king can capture a bishop
+       || ((pos.pieces(weakerSide,KING)&edges) && SquareDistance[loserKSq][winnerKSq]<=2) ) // Dont't use this function is there is a stalemate risk
       return false;
 
     result = ( popcount<Max15>(bishops & BlackSquares)!=1 ) ? VALUE_DRAW // The endgame KBBK is drawn if the bishops cover squares of a single color only
-            : 2*BishopValueMg + 250 - 25*corner_dist[loserKSq] - 12*square_distance(loserKSq,pos.king_square(strongerSide));
+            : 2*BishopValueMg + 250 - 25*corner_dist[loserKSq] - 12*square_distance(loserKSq,winnerKSq);
 
     v=(strongerSide == pos.side_to_move()) ? result : -result;
     return true;

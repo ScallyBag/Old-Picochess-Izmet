@@ -595,13 +595,13 @@ namespace {
     // If we have a specialized probe function for the current material
     // configuration, call it and return.
     mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
-    if ( ss->ply>12
-         && !inCheck
+    if ( ss->ply>2
          && mi->knowledge_probe_exists()
          && mi->knowledge_probe(pos,value) )
     {
       ss->currentMove = MOVE_NONE;
-      return value;
+      if( value==VALUE_DRAW || value>=beta ) 
+        return value;
     }
 
     // Step 5. Evaluate the position statically and update parent's gain statistics
@@ -1169,14 +1169,6 @@ split_point_start: // At split points actual search starts from here
     if (pos.is_draw() || ss->ply > MAX_PLY)
         return DrawValue[pos.side_to_move()];
 
-    // Probe endgame knowledge base
-    // If we have a specialized probe function for the current material
-    // configuration, call it and return.
-    Thread* thisThread = pos.this_thread();
-    Material::Entry *mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
-    if (mi->knowledge_probe_exists() && mi->knowledge_probe(pos,value))
-      return value;
-
     // Decide whether or not to include checks, this fixes also the type of
     // TT entry depth that we are going to use. Note that in qsearch we use
     // only two types of depth in TT: DEPTH_QS_CHECKS or DEPTH_QS_NO_CHECKS.
@@ -1200,6 +1192,15 @@ split_point_start: // At split points actual search starts from here
         ss->currentMove = ttMove; // Can be MOVE_NONE
         return ttValue;
     }
+    
+    // Probe endgame knowledge base
+    // If we have a specialized probe function for the current material
+    // configuration, call it and return.
+    Thread* thisThread = pos.this_thread();
+    Material::Entry *mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
+    if (mi->knowledge_probe_exists() && mi->knowledge_probe(pos,value))
+      if( value==VALUE_DRAW || value>=beta ) 
+        return value;
 
     // Evaluate the position statically
     if (InCheck)

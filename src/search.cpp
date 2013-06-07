@@ -595,13 +595,19 @@ namespace {
     // If we have a specialized probe function for the current material
     // configuration, call it and return.
     mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
-    if ( ss->ply>2
+    if ( !PvNode
+         && !inCheck
+         && depth<12
          && mi->knowledge_probe_exists()
          && mi->knowledge_probe(pos,value) )
     {
-      ss->currentMove = MOVE_NONE;
-      if( value==VALUE_DRAW || value>=beta ) 
+      //ss->currentMove = MOVE_NONE;
+      if( value==VALUE_DRAW || value>=beta )
+      {
+	TT.store(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER, depth,
+                 MOVE_NONE, VALUE_NONE, VALUE_NONE);
         return value;
+      }
     }
 
     // Step 5. Evaluate the position statically and update parent's gain statistics
@@ -1198,7 +1204,10 @@ split_point_start: // At split points actual search starts from here
     // configuration, call it and return.
     Thread* thisThread = pos.this_thread();
     Material::Entry *mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames, thisThread->knowledgeBases);
-    if (mi->knowledge_probe_exists() && mi->knowledge_probe(pos,value))
+    if (   !PvNode
+        && !InCheck
+        && mi->knowledge_probe_exists()
+        && mi->knowledge_probe(pos,value))
       if( value==VALUE_DRAW || value>=beta ) 
         return value;
 

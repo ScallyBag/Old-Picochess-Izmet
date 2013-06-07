@@ -605,7 +605,7 @@ namespace {
       if( value==VALUE_DRAW || value>=beta )
       {
 	TT.store(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER, depth,
-                 MOVE_NONE, VALUE_NONE, VALUE_NONE);
+                 ss->currentMove, VALUE_NONE, VALUE_NONE);
         return value;
       }
     }

@@ -196,7 +196,7 @@ endif
 
 ifeq ($(COMP),mingw)
 	comp=mingw
-	CXX=x86_64-w64-mingw32-g++
+	CXX=g++
 	profile_prepare = gcc-profile-prepare
 	profile_make = gcc-profile-make
 	profile_use = gcc-profile-use

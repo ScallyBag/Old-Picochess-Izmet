@@ -24,6 +24,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "bitcount.h"
 #include "book.h"
 #include "evaluate.h"
 #include "movegen.h"
@@ -509,6 +510,7 @@ namespace {
     bool inCheck, givesCheck, pvMove, singularExtensionNode;
     bool captureOrPromotion, dangerous, doFullDepthSearch;
     int moveCount, playedMoveCount;
+    Material::Entry *mi;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -592,6 +594,26 @@ namespace {
             ss->killers[0] = ttMove;
         }
         return ttValue;
+    }
+
+    // Step 4.5 Probe endgame specialized eval
+    // If we have a specialized probe function for the current material
+    // configuration, call it and return.
+    mi=Material::probe(pos, thisThread->materialTable, thisThread->endgames);
+    if ( cutNode
+         && !inCheck
+         && depth<=12
+         && mi->specialized_eval_exists()
+         && popcount<Max15>(pos.pieces(pos.side_to_move())) > 1 // Dont't cut if there is a stalemate risk
+    )
+    {
+      value=mi->evaluate(pos);
+      if( value==VALUE_DRAW || value>=beta )
+      {
+        TT.store(posKey, value_to_tt(bestValue, ss->ply), BOUND_LOWER, depth,
+        ss->currentMove, VALUE_NONE, VALUE_NONE);
+        return value;
+      }
     }
 
     // Step 5. Evaluate the position statically and update parent's gain statistics

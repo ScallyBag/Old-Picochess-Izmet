@@ -1687,7 +1687,9 @@ namespace DGT
                     if (ponderHitFEN.find (currentFEN.substr (0, currentFEN.find (' '))) != string::npos /*&& Search::Signals.stop == false*/)
                       {
                         cout << "ponderhit!!" << endl;
-                        UCI::loop ("ponderhit");
+                        Search::Limits.ponder = false;
+                        // Instead of calling UCI::loop ("ponderhit"), setting Search::Limits.ponder avoids multi-threaded issues when playing a timed game
+                        // UCI::loop ("ponderhit");
                       }
                     else
                       {

@@ -1614,7 +1614,8 @@ namespace DGT
                         Move m = *it;
                         pgnFile << getPgn( pos, m);
                         pgnFile.flush();
-                        pgnFile.rdbuf()->pubsync();
+                        // pubsync() Needed for raspberry pi
+                        // pgnFile.rdbuf()->pubsync();
                       }
                     pos.do_move (*it, SetupStates->top ());
                     
@@ -1629,7 +1630,8 @@ namespace DGT
                       }
                     pgnFile << getPgn( pos, playerMove);
                     pgnFile.flush();
-                    pgnFile.rdbuf()->pubsync();
+                    // pubsync() Needed for raspberry pi
+                    // pgnFile.rdbuf()->pubsync();
                     pos.do_move (playerMove, SetupStates->top ()); //Do the board move
                   }
 

@@ -1114,20 +1114,20 @@ namespace DGT
 
         if (playMode == ANALYSIS)
           {
-            pgn.append ("[White \"Analysis\"\n");
-            pgn.append ("[Black \"Analysis\"\n");
+            pgn.append ("[White \"Analysis\"]\n");
+            pgn.append ("[Black \"Analysis\"]\n");
 
           }
 
         if (computerPlays == WHITE)
           {
-            pgn.append ("[White \"Stockfish\"\n");
-            pgn.append ("[Black \"User\"\n");
+            pgn.append ("[White \"Stockfish\"]\n");
+            pgn.append ("[Black \"User\"]\n");
           }
         else
           {
-            pgn.append ("[White \"User\"\n");
-            pgn.append ("[Black \"Stockfish\"\n");
+            pgn.append ("[White \"User\"]\n");
+            pgn.append ("[Black \"Stockfish\"]\n");
           }
       }
 

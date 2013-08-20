@@ -31,7 +31,7 @@ logging.basicConfig(
 application = tornado.web.Application([
     # Web app part
     (r"/", PGNHandler),
-    (r"/projects", PGNHandler),
+    (r"/game.pgn", PGNHandler),
 ], debug=True, **settings)
 
 

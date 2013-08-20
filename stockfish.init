@@ -15,10 +15,12 @@ case "$1" in
     else
        screen -dmUS sf /home/miniand/git/Stockfish/src/stockfish dgt /dev/ttyUSB0
     fi
+    screen -dmUS sf /home/miniand/git/Stockfish/web/app.py
     ;;
   stop)
     echo "Stopping stockfish"
     pkill stockfish
+    pkill app.py
     ;;
   *)
     echo "Usage: /etc/init.d/stockfish {start|stop}"

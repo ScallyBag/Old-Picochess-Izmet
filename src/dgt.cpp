@@ -1103,23 +1103,31 @@ namespace DGT
     // Write header if its the first move
     if (plyCount==0)
       {
+        pgn.append("[Event \"Picochess\"]\n");
+
         if (customPosition) {
             pgn.append(" ( FEN: ");
             pgn.append(getStartFEN());
             pgn.append(" )");
           }
 
+
         if (playMode == ANALYSIS)
           {
-            pgn.append ("Analysis\n");
+            pgn.append ("[White \"Analysis\"\n");
+            pgn.append ("[Black \"Analysis\"\n");
+
           }
-        else if (computerPlays == WHITE)
+
+        if (computerPlays == WHITE)
           {
-            pgn.append ("Stockfish - User\n");
+            pgn.append ("[White \"Stockfish\"\n");
+            pgn.append ("[Black \"User\"\n");
           }
         else
           {
-            pgn.append ("User - Stockfish\n");
+            pgn.append ("[White \"User\"\n");
+            pgn.append ("[Black \"Stockfish\"\n");
           }
       }
 

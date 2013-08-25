@@ -1118,16 +1118,18 @@ namespace DGT
             pgn.append ("[Black \"Analysis\"]\n");
 
           }
-
-        if (computerPlays == WHITE)
-          {
-            pgn.append ("[White \"Stockfish\"]\n");
-            pgn.append ("[Black \"User\"]\n");
-          }
         else
           {
-            pgn.append ("[White \"User\"]\n");
-            pgn.append ("[Black \"Stockfish\"]\n");
+            if (computerPlays == WHITE)
+              {
+                pgn.append ("[White \"Stockfish\"]\n");
+                pgn.append ("[Black \"User\"]\n");
+              }
+            else
+              {
+                pgn.append ("[White \"User\"]\n");
+                pgn.append ("[Black \"Stockfish\"]\n");
+              }
           }
       }
 
@@ -1617,7 +1619,7 @@ namespace DGT
                     SetupStates->push (StateInfo ());
                     // In INFINITE analysis/training mode, every move is a player move and thus there is no need to write
                     // the move from the game move list
-                    if (rewritePGN || (*it == game.back () && clockMode!=INFINITE))
+                    if (rewritePGN)
                       {
                         Move m = *it;
                         pgnFile << getPgn( pos, m);
@@ -1634,7 +1636,7 @@ namespace DGT
                   {
                     SetupStates->push (StateInfo ());
                     if (!Search::UciPvDgt.score.empty ()) {
-                        pgnFile << " ( { "<< Search::UciPvDgt.score<< " depth "<<Search::UciPvDgt.depth<< " } "<<Search::UciPvDgt.pv << " ) ";
+                        pgnFile << " { "<< Search::UciPvDgt.score<< " depth "<<Search::UciPvDgt.depth<< " } ("<<Search::UciPvDgt.pv << " ) ";
                       }
                     pgnFile << getPgn( pos, playerMove);
                     pgnFile.flush();
@@ -1666,6 +1668,9 @@ namespace DGT
                       {
                         printMoveOnClock (bookMove);
                         game.push_back (bookMove);
+                        pgnFile << getPgn( pos, bookMove);
+                        pgnFile.flush();
+
                         if (playMode == BOOK)
                           {
                             pos.do_move (bookMove, SetupStates->top ());
@@ -1747,6 +1752,9 @@ namespace DGT
               {
                 printMoveOnClock (Search::RootMoves[0].pv[0]);
                 game.push_back (Search::RootMoves[0].pv[0]);
+                pgnFile << getPgn( pos, Search::RootMoves[0].pv[0]);
+                pgnFile.flush();
+
               }
 
 finishSearch:

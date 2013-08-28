@@ -11,9 +11,13 @@ LOCAL_SRC_FILES := \
 LOCAL_CFLAGS    := -I$(ANDROID_NDK)/sources/cxx-stl/stlport/stlport \
 		    -mandroid \
 		 	-DTARGET_OS=android -D__ANDROID__ \
-			-isystem $(ANDROID_ARM_HEADER)/usr/include \
-					-DNO_PREFETCH=1
+			-isystem $(ANDROID_NDK)/platforms/android-9/arch-arm/usr/include \
+					-DNO_PREFETCH=1 -O3
 LOCAL_STATIC_LIBRARIES := stlport
+LOCAL_STATIC_LIBRARIES += stockfish
+LOCAL_LDLIBS += $(ANDROID_NDK)/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi-v7a/libgnustl_static.a
+LOCAL_C_INCLUDES := $(ANDROID_NDK)/sources/cxx-stl/gnu-libstdc++/4.6/include 
+LOCAL_C_INCLUDES += $(ANDROID_NDK)/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi-v7a/include
 
 include $(BUILD_EXECUTABLE)
 

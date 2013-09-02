@@ -27,3 +27,9 @@ class ScrollableLabel(ScrollView):
         self.background.size = size
         self.label.text_size = (size[0]-50, None)
 
+    def update(self, text):
+#        print self.size
+        if len(self.label.text) > self.size[0]*2:
+            self.label.text = ""
+        self.label.text += text
+

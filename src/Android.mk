@@ -17,6 +17,8 @@ LOCAL_STATIC_LIBRARIES := stlport
 LOCAL_LDLIBS += $(ANDROID_NDK)/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi-v7a/libgnustl_static.a
 LOCAL_C_INCLUDES := $(ANDROID_NDK)/sources/cxx-stl/gnu-libstdc++/4.6/include 
 LOCAL_C_INCLUDES += $(ANDROID_NDK)/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi-v7a/include
+LOCAL_ARM_MODE := arm
+LOCAL_CFLAGS := -O3
 
 include $(BUILD_EXECUTABLE)
 

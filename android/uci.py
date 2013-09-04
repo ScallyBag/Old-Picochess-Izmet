@@ -56,12 +56,13 @@ class UCIEngine:
         self.options = {}
         self.__queuedCommands = []
         self.eng_process = None
+        self.buffer = Queue()
+
         try:
             self.eng_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, bufsize=1, close_fds=ON_POSIX)
 #            if read_only :
 #                self.eng_process = subprocess.Popen(args,bufsize=1, close_fds=ON_POSIX)
 #                self.eng_process.stdout, self.eng_processself.eng_process.communicate()
-            self.buffer = Queue()
             t = Thread(target=enqueue_output, args=(self.eng_process.stdout, self.buffer))
             t.daemon = True # thread dies with the program
             t.start()
@@ -70,9 +71,9 @@ class UCIEngine:
             t2.daemon = True # thread dies with the program
             t2.start()
 
-        except OSError:
+        except OSError, e:
             print "OS error in starting engine"
-
+            print e
     def logText(self, text, style):
         """
         """
@@ -147,8 +148,8 @@ class UCIEngine:
 
     def quit(self):
 #        self.onOutgoingData('quit\n')
-        self.eng_process.send_signal(signal.SIGQUIT)
-
+        if self.eng_process:
+            self.eng_process.send_signal(signal.SIGQUIT)
     def startGame(self):
         """
         """

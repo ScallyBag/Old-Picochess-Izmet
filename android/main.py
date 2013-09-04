@@ -92,11 +92,12 @@ class Picochess(App):
         return kivy.utils.platform()
 
     def start_engine(self):
-    #        self.use_engine = False
         eng_exec = 'engines/stockfish-arm'
         if self.get_platform() =='macosx':
             eng_exec = 'engines/stockfish-mac'
-        uci_engine = UCIEngine([eng_exec,'dgt', self.device.text])
+        else:
+            eng_exec = 'engines/stockfish-arm'
+        uci_engine = UCIEngine(['su','-c', eng_exec+' dgt '+self.device.text])
 #        uci_engine.start()
 #        uci_engine.configure({'Threads': '1'})
 

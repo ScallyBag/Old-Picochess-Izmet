@@ -146,7 +146,11 @@ class UCIEngine:
     def quit(self):
 #        self.onOutgoingData('quit\n')
         if self.eng_process:
-            self.eng_process.send_signal(signal.SIGQUIT)
+            try:
+                self.eng_process.send_signal(signal.SIGQUIT)
+            except OSError:
+                print "Cant kill.."
+
     def startGame(self):
         """
         """

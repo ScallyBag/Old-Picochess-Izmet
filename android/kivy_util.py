@@ -30,9 +30,7 @@ class ScrollableLabel(ScrollView):
         self.label.text_size = (size[0]-50, None)
 
     def update(self, text):
-#        print self.size
-        if len(self.label.text) > MAX_TEXT_LENGTH:
-            self.label.text = ""
+#        if len(self.label.text) > MAX_TEXT_LENGTH:
+ #           self.label.text = ""
         self.label.text += text
-        self.label.parent.scroll_y = 0.0
 

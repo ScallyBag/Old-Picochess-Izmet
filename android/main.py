@@ -66,7 +66,11 @@ class Picochess(App):
             print "Disconnecting pico"
             self.picochess_connected = False
             self.pico_bt.text="Connect Pico"
-            self.uci_engine.quit()
+            if self.get_platform() =='macosx':
+                self.uci_engine.quit()
+            else:
+                # android
+                subprocess.call(['su','-c', 'pkill stockfish-arm'])
             self.uci_engine = None
 
         if self.picochess_connected:

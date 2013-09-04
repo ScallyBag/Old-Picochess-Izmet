@@ -60,9 +60,6 @@ class UCIEngine:
 
         try:
             self.eng_process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, bufsize=1, close_fds=ON_POSIX)
-#            if read_only :
-#                self.eng_process = subprocess.Popen(args,bufsize=1, close_fds=ON_POSIX)
-#                self.eng_process.stdout, self.eng_processself.eng_process.communicate()
             t = Thread(target=enqueue_output, args=(self.eng_process.stdout, self.buffer))
             t.daemon = True # thread dies with the program
             t.start()

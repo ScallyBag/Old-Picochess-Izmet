@@ -3,6 +3,8 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.graphics import Rectangle
 
+MAX_TEXT_LENGTH = 10000
+
 class ScrollableLabel(ScrollView):
     def __init__(self, text, ref_callback=None, *args, **kwargs):
         super(ScrollableLabel, self).__init__(*args, **kwargs)
@@ -29,7 +31,8 @@ class ScrollableLabel(ScrollView):
 
     def update(self, text):
 #        print self.size
-        if len(self.label.text) > self.size[0]*2:
+        if len(self.label.text) > MAX_TEXT_LENGTH:
             self.label.text = ""
         self.label.text += text
+        self.label.parent.scroll_y = 0.0
 

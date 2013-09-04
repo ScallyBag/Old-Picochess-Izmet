@@ -10,17 +10,12 @@ import subprocess
 import sys
 from threading import Thread
 from uci import UCIEngine
-
-#
-#try:
-#    from Queue import Queue, Empty
-#except ImportError:
-#    from queue import Queue, Empty  # python 3.x
-
+import os
 
 ON_POSIX = 'posix' in sys.builtin_module_names
-PICO_OUTPUT = ''
 
+PICO_NOENGINE_OUTPUT = 'No Engine output yet ..'
+BLANK_OUTPUT = ''
 
 class Picochess(App):
     def build(self):
@@ -44,16 +39,12 @@ class Picochess(App):
         top_bar.add_widget(self.device)
         window.add_widget(top_bar)
 
-        self.pico_log = ScrollableLabel(PICO_OUTPUT)
+        self.pico_log = ScrollableLabel(PICO_NOENGINE_OUTPUT)
 
         window.add_widget(self.pico_log)
         self.eng_process = None
 
         self.uci_engine = None
-#        if self.is_desktop():
-#            self._keyboard = Window.request_keyboard(
-#                self._keyboard_closed, self)
-#            self._keyboard.bind(on_key_down=self._on_keyboard_down)
 
         self.start_engine_thread()
         self.use_engine = False
@@ -92,75 +83,34 @@ class Picochess(App):
         return kivy.utils.platform()
 
     def start_engine(self):
-        eng_exec = 'engines/stockfish-arm'
         if self.get_platform() =='macosx':
+#            print "starting mac os x engine"
             eng_exec = 'engines/stockfish-mac'
+#            print "command: "+ eng_exec +' dgt '+self.device.text
+            uci_engine = UCIEngine([eng_exec, 'dgt', self.device.text])
         else:
             eng_exec = 'engines/stockfish-arm'
-        uci_engine = UCIEngine(['su','-c', eng_exec+' dgt '+self.device.text])
-#        uci_engine.start()
-#        uci_engine.configure({'Threads': '1'})
+            # Check file permissions if android
+            if not os.access(eng_exec,os.X_OK):
+                oct(os.stat(eng_exec).st_mode & 0755)
+                os.chmod(eng_exec, 0755)
 
-        # Wait until the uci connection is setup
-#        while not uci_engine.ready:
-#            uci_engine.registerIncomingData()
+            uci_engine = UCIEngine(['su','-c', eng_exec+' dgt '+self.device.text])
 
-#        uci_engine.startGame()
-        # uci_engine.requestMove()
         self.uci_engine=uci_engine
 
-
     def update_engine_output(self, output):
-#        if not self.use_engine:
-#            self.start_engine()
-
-#        def parse_score(line):
-#            analysis_board = ChessBoard()
-#            analysis_board.setFEN(self.chessboard.getFEN())
-#            tokens = line.split()
-#            try:
-#                score_index = tokens.index('score')
-#            except ValueError:
-#                score_index = -1
-#            score = None
-#            move_list = []
-#            if score_index!=-1 and tokens[score_index+1]=="cp":
-#                score = float(tokens[score_index+2])/100*1.0
-#            try:
-#                line_index = tokens.index('pv')
-#                for mv in tokens[line_index+1:]:
-#                    analysis_board.addTextMove(mv)
-#                    move_list.append(analysis_board.getLastTextMove())
-#
-#            except ValueError:
-#                line_index = -1
-#            variation = self.generate_move_list(move_list,start_move_num=self.chessboard.getCurrentMove()+1) if line_index!=-1 else None
-#
-#            del analysis_board
-#            if variation and score:
-#                return move_list, "[b]%s[/b][color=0d4cd6][ref=engine_toggle]         Stop[/ref][/color]\n[color=77b5fe]%s[/color]" %(score,"".join(variation))
-
         while True:
             if self.uci_engine:
+                if output.children[0].text == PICO_NOENGINE_OUTPUT:
+                    output.children[0].text = BLANK_OUTPUT
                 line = self.uci_engine.getOutput()
 
                 if line:
-#                    output.children[0].text+=line
                     output.update(line)
-#                    out_score = parse_score(line)
-#                    if out_score:
-#                        raw_line, cleaned_line = out_score
-#                        if cleaned_line:
-#                            output.children[0].text = cleaned_line
-#                        if raw_line:
-#                            output.raw = raw_line
-            elif output.children[0].text != PICO_OUTPUT:
-                output.children[0].text = PICO_OUTPUT
-
-
-
-
-
+            else:
+                if output.children[0].text != PICO_NOENGINE_OUTPUT:
+                    output.children[0].text = PICO_NOENGINE_OUTPUT
 
 if __name__ == '__main__':
     Picochess().run()

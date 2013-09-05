@@ -2,10 +2,14 @@ import kivy
 from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy_util import ScrollableLabel
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.switch import Switch
+from kivy.uix.togglebutton import ToggleButton
 import subprocess
 import sys
 from threading import Thread
@@ -37,6 +41,14 @@ class Picochess(App):
 
         self.device = TextInput(text=default_device_str, multiline = False)
         top_bar.add_widget(self.device)
+
+        options_grid = GridLayout(cols=2)
+        self.superuser_checkbox = Switch(active=True)
+
+        options_grid.add_widget(Label(text='Superuser'))
+        options_grid.add_widget(self.superuser_checkbox)
+        top_bar.add_widget(options_grid)
+
         window.add_widget(top_bar)
 
         self.pico_log = ScrollableLabel(PICO_NOENGINE_OUTPUT)
@@ -54,9 +66,6 @@ class Picochess(App):
     def operate_pico(self, bt):
         def connect_pico():
             print "Connecting pico"
-#            popup = Popup(title='DGT board device', content=TextInput(text='/dev/ttyUSB0'))
-##            popup.add_widget(Button(markup=True, size_hint=(0.2,0.2)))
-#            popup.open()
             try:
                 self.start_engine()
                 self.picochess_connected = True
@@ -74,7 +83,10 @@ class Picochess(App):
             else:
                 # android
                 try:
-                    subprocess.call(['su','-c', 'pkill stockfish-arm'])
+                    if self.superuser_checkbox.active:
+                        subprocess.call(['su','-c', 'pkill stockfish-arm'])
+                    else:
+                        subprocess.call(['pkill','stockfish-arm'])
                 except OSError:
                     self.pico_log.update("Could not disconnect pico, nothing was connected?")
             self.uci_engine = None
@@ -105,28 +117,20 @@ class Picochess(App):
             if not os.access(eng_exec,os.X_OK):
                 oct(os.stat(eng_exec).st_mode & 0755)
                 os.chmod(eng_exec, 0755)
-                uci_engine = UCIEngine(['su','-c', eng_exec+' dgt '+self.device.text])
+                if self.superuser_checkbox.active:
+                    uci_engine = UCIEngine(['su','-c', eng_exec+' dgt '+self.device.text])
+                else:
+                    uci_engine = UCIEngine([eng_exec,' dgt ',self.device.text])
         self.uci_engine=uci_engine
 
     def update_engine_output(self, output):
-        lines = []
-        total_lines = 0
         while True:
             if self.uci_engine:
                 if output.children[0].text == PICO_NOENGINE_OUTPUT:
                     output.children[0].text = BLANK_OUTPUT
                 line = self.uci_engine.getOutput()
-
                 if line:
-                    if total_lines < 50:
-                        output.update(line)
-                        total_lines+=1
-                    else:
-                        lines.append(line)
-                        if len(lines) > 50:
-                            output.update(("\n").join(lines))
-                            # output.update(line)
-                            lines = []
+                    output.update(line)
             else:
                 if output.children[0].text != PICO_NOENGINE_OUTPUT:
                     output.children[0].text = PICO_NOENGINE_OUTPUT

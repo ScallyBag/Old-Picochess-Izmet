@@ -64,9 +64,9 @@ class UCIEngine:
             t.daemon = True # thread dies with the program
             t.start()
 
-            t2 = Thread(target=enqueue_output, args=(self.eng_process.stderr, self.buffer))
-            t2.daemon = True # thread dies with the program
-            t2.start()
+#            t2 = Thread(target=enqueue_output, args=(self.eng_process.stderr, self.buffer))
+#            t2.daemon = True # thread dies with the program
+#            t2.start()
 
         except OSError, e:
             print "OS error in starting engine"
@@ -205,8 +205,6 @@ class UCIEngine:
         self.__haveMoves = True
         if move:
             self.__positionCommand += ' ' + move
-#            print "position_command: "
-#            print self.__positionCommand
             self.__sendCommand(self.__positionCommand)
 
     def parseLine(self, line):
@@ -265,11 +263,11 @@ class UCIEngine:
         return None
 
     def getOutput(self):
-        try:
-            line = self.buffer.get_nowait()
-            return line
-        except Empty:
-            pass
+#        try:
+        return self.buffer.get()
+#            return line
+#        except Empty:
+#            pass
 
 if __name__=="__main__":
     uci_engine = UCIEngine()

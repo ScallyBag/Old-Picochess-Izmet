@@ -489,9 +489,9 @@ Move PolyglotBook::parse_move(const Position& pos, Move& move){
       move = make<PROMOTION>(from_sq(move), to_sq(move), PieceType(pt + 1));
 
   // Add 'special move' flags and verify it is legal
-  for (MoveList<LEGAL> ml(pos); !ml.end(); ++ml)
-      if (move == (ml.move() ^ type_of(ml.move())))
-          return ml.move();
+  for (MoveList<LEGAL> it(pos); *it; ++it)
+      if (move == (*it ^ type_of(*it)))
+          return *it;
 
   return MOVE_NONE;
 }

@@ -283,7 +283,7 @@ namespace DGT
   string
   computeCastlingRights (string fen)
   {
-    Position customPos (fen, false, Threads.main_thread ());
+    Position customPos (fen, false, Threads.main());
     string outputFEN;
     bool canCastle = false;
 
@@ -873,7 +873,7 @@ namespace DGT
   Move
   isPlayable (const string& _fen)
   {
-    Position pos (getStartFEN (), false, Threads.main_thread ()); // The root position
+    Position pos (getStartFEN (), false, Threads.main()); // The root position
     stack<StateInfo> states;
     string fen = _fen.substr (0, _fen.find (' '));
 
@@ -885,13 +885,13 @@ namespace DGT
       }
 
     //Check is the fen is playable in current game position
-    for (MoveList<LEGAL> ml (pos); !ml.end (); ++ml)
+    for (MoveList<LEGAL> ml (pos); *ml; ++ml)
       {
         StateInfo state;
-        pos.do_move (ml.move (), state);
+        pos.do_move (*ml, state);
         if (pos.fen ().find (fen) != string::npos)
-          return ml.move ();
-        pos.undo_move (ml.move ());
+          return *ml;
+        pos.undo_move (*ml);
       }
 
     //Next we check from the end of the game to the beginning if we reached a position already played
@@ -1565,7 +1565,7 @@ namespace DGT
 
             configure (currentFEN); //on board configuration
 
-            pos.set(getStartFEN (), false, Threads.main_thread ()); // The root position
+            pos.set(getStartFEN (), false, Threads.main()); // The root position
 
             if (searching && clockMode == INFINITE)
               {
@@ -1759,7 +1759,7 @@ namespace DGT
 
 finishSearch:
             //set the FEN we are waiting ofr on the board
-            pos.set(getStartFEN (), false, Threads.main_thread ()); // The root position
+            pos.set(getStartFEN (), false, Threads.main()); // The root position
             // Keep track of position keys along the setup moves (from start position to the
             // position just before to start searching). Needed by repetition draw detection.
             Search::StateStackPtr SetupStates = Search::StateStackPtr (new std::stack<StateInfo > ());

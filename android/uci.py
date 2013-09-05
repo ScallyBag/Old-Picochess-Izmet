@@ -64,9 +64,9 @@ class UCIEngine:
             t.daemon = True # thread dies with the program
             t.start()
 
-#            t2 = Thread(target=enqueue_output, args=(self.eng_process.stderr, self.buffer))
-#            t2.daemon = True # thread dies with the program
-#            t2.start()
+            t2 = Thread(target=enqueue_output, args=(self.eng_process.stderr, self.buffer))
+            t2.daemon = True # thread dies with the program
+            t2.start()
 
         except OSError, e:
             print "OS error in starting engine"

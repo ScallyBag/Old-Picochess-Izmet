@@ -57,10 +57,13 @@ class Picochess(App):
 #            popup = Popup(title='DGT board device', content=TextInput(text='/dev/ttyUSB0'))
 ##            popup.add_widget(Button(markup=True, size_hint=(0.2,0.2)))
 #            popup.open()
-            self.start_engine()
-
-            self.picochess_connected = True
-            self.pico_bt.text="Disconnect Pico"
+            try:
+                self.start_engine()
+                self.picochess_connected = True
+                self.pico_bt.text="Disconnect Pico"
+            except OSError:
+                self.pico_log.update("Sorry, your phone/tablet is not rooted. You need to root it before using the DGT board.")
+                self.picochess_connected = False
 
         def disconnect_pico():
             print "Disconnecting pico"
@@ -70,7 +73,10 @@ class Picochess(App):
                 self.uci_engine.quit()
             else:
                 # android
-                subprocess.call(['su','-c', 'pkill stockfish-arm'])
+                try:
+                    subprocess.call(['su','-c', 'pkill stockfish-arm'])
+                except OSError:
+                    self.pico_log.update("Could not disconnect pico, nothing was connected?")
             self.uci_engine = None
 
         if self.picochess_connected:
@@ -87,6 +93,7 @@ class Picochess(App):
         return kivy.utils.platform()
 
     def start_engine(self):
+        uci_engine = None
         if self.get_platform() =='macosx':
 #            print "starting mac os x engine"
             eng_exec = 'engines/stockfish-mac'
@@ -98,12 +105,12 @@ class Picochess(App):
             if not os.access(eng_exec,os.X_OK):
                 oct(os.stat(eng_exec).st_mode & 0755)
                 os.chmod(eng_exec, 0755)
-
-            uci_engine = UCIEngine(['su','-c', eng_exec+' dgt '+self.device.text])
-
+                uci_engine = UCIEngine(['su','-c', eng_exec+' dgt '+self.device.text])
         self.uci_engine=uci_engine
 
     def update_engine_output(self, output):
+        lines = []
+        total_lines = 0
         while True:
             if self.uci_engine:
                 if output.children[0].text == PICO_NOENGINE_OUTPUT:
@@ -111,7 +118,15 @@ class Picochess(App):
                 line = self.uci_engine.getOutput()
 
                 if line:
-                    output.update(line)
+                    if total_lines < 50:
+                        output.update(line)
+                        total_lines+=1
+                    else:
+                        lines.append(line)
+                        if len(lines) > 50:
+                            output.update(("\n").join(lines))
+                            # output.update(line)
+                            lines = []
             else:
                 if output.children[0].text != PICO_NOENGINE_OUTPUT:
                     output.children[0].text = PICO_NOENGINE_OUTPUT

@@ -71,6 +71,7 @@ class UCIEngine:
         except OSError, e:
             print "OS error in starting engine"
             print e
+            raise
     def logText(self, text, style):
         """
         """

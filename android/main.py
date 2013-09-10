@@ -15,7 +15,7 @@ import sys
 from threading import Thread
 from uci import UCIEngine
 import os
-
+from time import sleep
 ON_POSIX = 'posix' in sys.builtin_module_names
 
 PICO_NOENGINE_OUTPUT = 'No Engine output yet ..'
@@ -134,6 +134,6 @@ class Picochess(App):
             else:
                 if output.children[0].text != PICO_NOENGINE_OUTPUT:
                     output.children[0].text = PICO_NOENGINE_OUTPUT
-
+                sleep(5)
 if __name__ == '__main__':
     Picochess().run()

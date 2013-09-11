@@ -1003,8 +1003,8 @@ static int _readMessageFromBoard()
       _debug("Received _DGTNIX_VERSION from the board\n");
       g_versionBuffer[0]=g_readBuffer[0];
       g_versionBuffer[1]=g_readBuffer[1];
-      float v = ((float)(g_readBuffer[0])) + 0.1 * ((float)(g_readBuffer[1]));
-      snprintf(g_versionBuffer,_DGTNIX_SIZE_VERSION, "%f", v);
+      //float v = ((float)(g_readBuffer[0])) + 0.1 * ((float)(g_readBuffer[1]));
+      snprintf(g_versionBuffer,_DGTNIX_SIZE_VERSION, "%f", ((float)(g_readBuffer[0])) + 0.1 * ((float)(g_readBuffer[1])));
       g_versionFlag=1;
       _debug("version %2d.%02d\n", g_readBuffer[0], g_readBuffer[1]);
       break;
@@ -1103,7 +1103,7 @@ static int _setUnixSocket(const char *port)
   servaddr.sun_family = AF_UNIX;
   strcpy(servaddr.sun_path, port);
   
-  if (connect(g_descriptorDriverBoard, &servaddr, sizeof( struct  sockaddr_un)) < 0) {
+  if (connect(g_descriptorDriverBoard, (struct sockaddr *) &servaddr, sizeof( struct  sockaddr_un)) < 0) {
     dgtnix_errno = errno;
     close(g_descriptorDriverBoard);
     g_descriptorDriverBoard=-1;

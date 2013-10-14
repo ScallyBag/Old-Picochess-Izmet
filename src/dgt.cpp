@@ -1576,6 +1576,9 @@ namespace DGT
             //Test if we reached the computer move fen
             if (!searching && !computerMoveFENReached && (computerMoveFEN.find (s.substr (0, s.find (' '))) != string::npos))
               {
+                if (playMode!=ANALYSIS && playMode!=TRAINING) {
+                    dgtnixPrintMessageOnClock (" done ", true, false);
+                  }
                 computerMoveFENReached = true;
                 //Add fischer increment time to the player's clock
                 if (computerPlays != WHITE) wTime += fischerInc;

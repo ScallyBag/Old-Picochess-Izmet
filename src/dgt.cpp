@@ -1519,7 +1519,7 @@ namespace DGT
     dgtnixPrintMessageOnClock ("pic017", true, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
-    UCI::loop ("setoption name Hash value 512");
+    UCI::loop ("setoption name Hash value 256");
     UCI::loop ("setoption name Emergency Base Time value 1300"); //keep 1 second on clock
     UCI::loop (string ("setoption name Book File value ") + bookPath + "varied.bin"); //default book
     UCI::loop (string ("setoption name OwnBook value true"));
